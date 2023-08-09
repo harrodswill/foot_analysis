@@ -184,7 +184,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
   tree->Branch("F15_mul"  , &F15_mul   , "F15_mul/i" );
   tree->Branch("F15_e"    ,  F15_e     , "F15_e[F15_mul]/F" );
   tree->Branch("F15_cog"  ,  F15_cog   , "F15_cog[F15_mul]/F" );
-  tree->Branch("F15_size" ,  F15_size  , "F15_size[F15_mul]/F" );
+  tree->Branch("F15_size" ,  F15_size  , "F15_size[5_mul]/F" );
   tree->Branch("F16_mul"  , &F16_mul   , "F16_mul/i" );
   tree->Branch("F16_e"    ,  F16_e     , "F16_e[F16_mul]/F" );
   tree->Branch("F16_cog"  ,  F16_cog   , "F16_cog[F16_mul]/F" );
@@ -229,8 +229,6 @@ void analyse(int firstEvent, int max_events, TChain * ch)
       l->Draw();
     } 
 
-
-
     canvas_raw_sigma->cd(i+1);
     h1_sigma_raw[i]->SetMarkerStyle(kFullCircle);
     h1_sigma_raw[i]->SetMarkerSize(0.2);
@@ -241,6 +239,12 @@ void analyse(int firstEvent, int max_events, TChain * ch)
     h1_sigma_raw[i]->GetYaxis()->SetTitle("ADC sigma");
     h1_sigma_raw[i]->SetTitle("Sigmas before baseline correction");
     h1_sigma_raw[i]->Draw();
+    for(int c=0; c<10; c++)
+    {
+      TLine * l = new TLine(c*64,0,c*64,1500);
+      l->Draw();
+    } 
+
 
     /*	for(int d=0; d<10; d++)
 	{
@@ -516,7 +520,7 @@ int main(Int_t argc, Char_t* argv[])
   gStyle->SetPalette(kRainBow);
 
   TChain * ch = new TChain("h101");
-  ch->Add("/u/lndgst02/william/roots/test_william_2.root");
+  ch->Add("/u/lndgst02/william/roots/run93_unpacked.root");
   //ch->Add("test.root");
   analyse(0,-1,ch);
   //analyse(0,5e4,ch);
