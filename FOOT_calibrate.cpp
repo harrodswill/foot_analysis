@@ -59,28 +59,28 @@ double get_esum(cluster c)//calculate cluster sum
 
 void Check_Strip(UInt_t number, double energy, foot_data& fdata)
 {
-  //cout << "\n\n---------------------------------------";
-  //cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
+  cout << "\n\n---------------------------------------";
+  cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
   strip_data strip = std::make_pair(number,energy);
   cluster clust;
   if(fdata.size()==0)//no cluster yet, create new
   {
     clust.push_back(strip);
     fdata.push_back(clust);
-    //cout << "\n\t New cluster is created for this strip";
+    cout << "\n\t New cluster is created for this strip";
     return;
   }
   cluster    this_clust = fdata.back();
   strip_data this_strip = this_clust.back();
   if(abs(strip.first-this_strip.first)<2)//neighbour found 
   {
-    //cout << "\n\tStrip belong to exisitng cluster! Adding it...";
+    cout << "\n\tStrip belong to exisitng cluster! Adding it...";
     fdata.back().push_back(strip);
     return;
   }
   else
   {
-    //cout << "\n\tStrip is a new cluster! Making it...";
+    cout << "\n\tStrip is a new cluster! Making it...";
     clust.clear();
     clust.push_back(strip);
     fdata.push_back(clust);
@@ -163,6 +163,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
   ch->SetBranchAddress("TRIGGER",&TRIGGER);
   ch->SetBranchAddress("TPATv",TPATv);
   for(int i=0; i<NDETS; i++){
+    cout << "\nTree branches being sorted out for FOOT: " << foot_id[i];
     TString bname   = Form("FOOT%d",  foot_id[i]);
     TString bname_E = Form("FOOT%dE", foot_id[i]);
     TString bname_I = Form("FOOT%dI", foot_id[i]);
@@ -211,6 +212,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
   TF1* foo = new TF1("foo","gaus",0,1000);
   for(int i=0; i<NDETS; i++)
   {
+    cout << "\nPedestal and raw sigma data being prepared and plotted for FOOT: " << foot_id[i];
     h2_peds_raw[i]->FitSlicesY(foo,1,640,0,"QNR",0);
     h1_peds[i]      = (TH1D*)gDirectory->Get(Form("h%d_1",foot_id[i]))->Clone(Form("h1_peds_%d",  foot_id[i]));
     h1_sigma_raw[i] = (TH1D*)gDirectory->Get(Form("h%d_2",foot_id[i]))->Clone(Form("h1_sigma_raw_%d",foot_id[i]));
@@ -245,14 +247,6 @@ void analyse(int firstEvent, int max_events, TChain * ch)
       l->Draw();
     } 
 
-
-    /*	for(int d=0; d<10; d++)
-	{
-	TLine * l2 = new TLine(d*64,-2,d*64,10);
-	l2->Draw();	  
-	} */
-
-    // Think I accidentally deleted some code here
 
     for(int j=0; j<640; j++)
     {
@@ -296,6 +290,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
 	  asic_offset[counter_asic] += signal;
 	}
 	if((FOOTI[f][i]%64)==0){//switch to next asic
+	  //	  cout << "\nStrip: " << FOOTI[f][i] " for FOOT: " << foot_id[f] << "is corrected well for individual asics";
 	  asic_offset[counter_asic] /= stat;
 	  counter_asic++;  stat=0;
 	}
@@ -316,6 +311,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
   //-------  Slicing, fitting, saving fine sigmas -------
   foo = new TF1("foo","gaus",-10,10);
   for(int i=0; i<NDETS; i++){
+    cout << "\nFitting lines on FOOT: " << foot_id[i];
     h2_baseline[i]->FitSlicesY(foo,1,640,0,"QNR",0);
     h1_baseline[i]  = (TH1D*)gDirectory->Get(Form("h%d_baseline_1",foot_id[i]))->Clone(Form("h1_baseline_%d",foot_id[i]));
     h1_sigma_fine[i]  = (TH1D*)gDirectory->Get(Form("h%d_baseline_2",foot_id[i]))->Clone(Form("h1_sigma_fine_%d",foot_id[i]));
@@ -343,11 +339,12 @@ void analyse(int firstEvent, int max_events, TChain * ch)
   foot_data data[NDETS];//collection of clusters from all detectors 
   for(int ev=firstEvent; ev<firstEvent+Nevents; ev++)
   {
-    cout << "\r-- Event # : " << ev << flush;
+    cout << "\n-- Event # : " << ev;
     ch->GetEntry(ev);
     //--------  Global base line correction in every FOOT in this event ---------
     for(int f=0; f<NDETS; f++)//loop over all foots
     {
+      //  cout << "\nPerforming global baseline correction for FOOT: " << foot_id[f];
       data[f].clear(); 
 
       mean_ssd=0; stat=0;
@@ -355,11 +352,12 @@ void analyse(int firstEvent, int max_events, TChain * ch)
 	if(!is_good_strip(foot_id[f],FOOTI[f][i])) continue; 
 	signal = FOOTE[f][i] - pedestal[f][i];
 	if(fabs(signal) > (10 * sigma[f][i])) continue; //possible hist candidates
+	//	cout << "\nStrip: " << FOOTI[f][i] << "for FOOT: " << foot_id [f] <" is good for a global baseline correction, Energy: " << signal;	
 	stat++;    mean_ssd += signal;
       }
       mean_ssd /= stat;
       if(fabs(mean_ssd)>10){
-	//cout << "\n--[WARNING]: In FOOT " << foot_id[f] << "Mean ssd = " << mean_ssd << endl;
+	cout << "\n--[WARNING]: In FOOT " << foot_id[f] << "Mean ssd is " << mean_ssd << "which shows the results need calibration." << endl;
       }
 
       //------- Fine baseline correction for individual asics ---------
@@ -391,7 +389,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
 	}
 	if(!is_good_strip(foot_id[f],FOOTI[f][i])) continue; 
 	signal = FOOTE[f][i] - pedestal[f][i] - mean_ssd - asic_offset[counter_asic];
-
+	//      cout << "\nStrip: " << FOOTI[f][i] << " for FOOT: " << foot_id[f] < " has been baseline corrected including the asic sum, Energy: " << signal;
 	signal_sum += signal;
       }
 
@@ -409,6 +407,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
 
 	if(signal>(NSIGMA * sigma_fine[f][i]))
 	{
+	  cout << "\nStrip: " << FOOTI[f][i] << " for FOOT: " << foot_id[f] << " has passed the threshold condition, this has Energy: " << signal ;
 	  Check_Strip(FOOTI[f][i], signal, data[f]);
 	}
       }
@@ -446,7 +445,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
     {
       for(auto & c0: data[f])
       {
-	switch(f)//fillling up output tree
+	switch(f)//filling up output tree
 	{
 	  case 0: 
 	    F15_e[F15_mul]   = get_esum(c0);
