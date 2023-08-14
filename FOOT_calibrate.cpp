@@ -59,7 +59,7 @@ double get_esum(cluster c)//calculate cluster sum
 
 void Check_Strip(UInt_t number, double energy, foot_data& fdata)
 {
-  cout << "\n\n---------------------------------------";
+  cout << "\n\n--- Entering clustering function";
   cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
   strip_data strip = std::make_pair(number,energy);
   cluster clust;
@@ -67,20 +67,20 @@ void Check_Strip(UInt_t number, double energy, foot_data& fdata)
   {
     clust.push_back(strip);
     fdata.push_back(clust);
-    cout << "\n\t New cluster is created for this strip";
+    cout << "\nNew cluster is created for this strip";
     return;
   }
   cluster    this_clust = fdata.back();
   strip_data this_strip = this_clust.back();
   if(abs(strip.first-this_strip.first)<2)//neighbour found 
   {
-    cout << "\n\tStrip belong to exisitng cluster! Adding it...";
+    cout << "\nStrip belong to existing cluster! Adding it...";
     fdata.back().push_back(strip);
     return;
   }
   else
   {
-    cout << "\n\tStrip is a new cluster! Making it...";
+    cout << "\nStrip is a new cluster! Making it...";
     clust.clear();
     clust.push_back(strip);
     fdata.push_back(clust);
@@ -162,7 +162,8 @@ void analyse(int firstEvent, int max_events, TChain * ch)
   UInt_t TPATv[1];
   ch->SetBranchAddress("TRIGGER",&TRIGGER);
   ch->SetBranchAddress("TPATv",TPATv);
-  for(int i=0; i<NDETS; i++){
+  for(int i=0; i<NDETS; i++)
+  {
     cout << "\nTree branches being sorted out for FOOT: " << foot_id[i];
     TString bname   = Form("FOOT%d",  foot_id[i]);
     TString bname_E = Form("FOOT%dE", foot_id[i]);
@@ -240,12 +241,12 @@ void analyse(int firstEvent, int max_events, TChain * ch)
     h1_sigma_raw[i]->GetXaxis()->SetTitle("Strip No.");
     h1_sigma_raw[i]->GetYaxis()->SetTitle("ADC sigma");
     h1_sigma_raw[i]->SetTitle("Sigmas before baseline correction");
-    h1_sigma_raw[i]->Draw();
+    h1_sigma_raw[i]->Draw("same");
     for(int c=0; c<10; c++)
     {
-      TLine * l = new TLine(c*64,0,c*64,1500);
+      TLine * l = new TLine(c*64,-2,c*64,10);
       l->Draw();
-    } 
+    }  
 
 
     for(int j=0; j<640; j++)
@@ -270,7 +271,8 @@ void analyse(int firstEvent, int max_events, TChain * ch)
     {
       //--------  Global base line correction in every FOOT in this event ---------
       mean_ssd=0; stat=0;
-      for(int i=0; i<640; i++){
+      for(int i=0; i<640; i++)
+      {
 	if(!is_good_strip(foot_id[f],FOOTI[f][i])) continue; 
 	signal = FOOTE[f][i] - pedestal[f][i];
 	if(fabs(signal) > (10 * sigma[f][i])) continue; //possible hit candidate
@@ -280,8 +282,12 @@ void analyse(int firstEvent, int max_events, TChain * ch)
       if(fabs(mean_ssd)>10){ continue; }
       //------------ Calculating fine baseline correction for individual asics ---------
       stat=0; counter_asic=0;
-      for(int i=0; i<10; i++){  asic_offset[i]=0.; }//reset asic baselines
-      for(int i=0; i<640; i++){
+      for(int i=0; i<10; i++)
+      {  
+	asic_offset[i]=0.; //reset asic baselines
+      }                       
+      for(int i=0; i<640; i++)
+      {
 	signal = FOOTE[f][i] - pedestal[f][i] - mean_ssd;
 	if(fabs(signal) < (4 * sigma[f][i]) && //ignore possible hit candidates
 	    is_good_strip(foot_id[f],FOOTI[f][i]))//and bad strips
@@ -289,7 +295,8 @@ void analyse(int firstEvent, int max_events, TChain * ch)
 	  stat++;
 	  asic_offset[counter_asic] += signal;
 	}
-	if((FOOTI[f][i]%64)==0){//switch to next asic
+	if((FOOTI[f][i]%64)==0) //switch to t.lmdext asic
+	{
 	  //	  cout << "\nStrip: " << FOOTI[f][i] " for FOOT: " << foot_id[f] << "is corrected well for individual asics";
 	  asic_offset[counter_asic] /= stat;
 	  counter_asic++;  stat=0;
@@ -310,7 +317,8 @@ void analyse(int firstEvent, int max_events, TChain * ch)
 
   //-------  Slicing, fitting, saving fine sigmas -------
   foo = new TF1("foo","gaus",-10,10);
-  for(int i=0; i<NDETS; i++){
+  for(int i=0; i<NDETS; i++)
+  {
     cout << "\nFitting lines on FOOT: " << foot_id[i];
     h2_baseline[i]->FitSlicesY(foo,1,640,0,"QNR",0);
     h1_baseline[i]  = (TH1D*)gDirectory->Get(Form("h%d_baseline_1",foot_id[i]))->Clone(Form("h1_baseline_%d",foot_id[i]));
@@ -330,7 +338,8 @@ void analyse(int firstEvent, int max_events, TChain * ch)
     h1_sigma_fine[i]->SetMarkerColor(kRed);
     h1_sigma_fine[i]->SetLineColor(kRed);
     h1_sigma_fine[i]->Draw("same");
-    for(int j=0; j<640; j++){
+    for(int j=0; j<640; j++)
+    {
       sigma_fine[i][j]    = h1_sigma_fine[i]->GetBinContent(j+1);
       cout << "\nFOOT: " << foot_id[i] << "\tStrip: " << j  << "\tFine sigma: " << sigma_fine[i][j];
     }
@@ -339,7 +348,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
   foot_data data[NDETS];//collection of clusters from all detectors 
   for(int ev=firstEvent; ev<firstEvent+Nevents; ev++)
   {
-    cout << "\n-- Event # : " << ev;
+    cout << "\n\n------- Event # : " << ev << "\n\n";
     ch->GetEntry(ev);
     //--------  Global base line correction in every FOOT in this event ---------
     for(int f=0; f<NDETS; f++)//loop over all foots
@@ -348,7 +357,8 @@ void analyse(int firstEvent, int max_events, TChain * ch)
       data[f].clear(); 
 
       mean_ssd=0; stat=0;
-      for(int i=0; i<640; i++){
+      for(int i=0; i<640; i++)
+      {
 	if(!is_good_strip(foot_id[f],FOOTI[f][i])) continue; 
 	signal = FOOTE[f][i] - pedestal[f][i];
 	if(fabs(signal) > (10 * sigma[f][i])) continue; //possible hist candidates
@@ -356,13 +366,17 @@ void analyse(int firstEvent, int max_events, TChain * ch)
 	stat++;    mean_ssd += signal;
       }
       mean_ssd /= stat;
-      if(fabs(mean_ssd)>10){
+      if(fabs(mean_ssd)>10)
+      {
 	cout << "\n--[WARNING]: In FOOT " << foot_id[f] << "Mean ssd is " << mean_ssd << "which shows the results need calibration." << endl;
       }
 
       //------- Fine baseline correction for individual asics ---------
       stat=0; counter_asic=0;
-      for(int i=0; i<10; i++){  asic_offset[i]=0.; }//reset asic baselines
+      for(int i=0; i<10; i++)
+      {  
+	asic_offset[i]=0.; //reset asic baselines
+      }
       for(int i=0; i<640; i++)
       {
 	signal = FOOTE[f][i] - pedestal[f][i] - mean_ssd;
@@ -372,7 +386,8 @@ void analyse(int firstEvent, int max_events, TChain * ch)
 	  stat++;
 	  asic_offset[counter_asic] += signal;
 	}
-	if((FOOTI[f][i]%64)==0){//switch to next asic
+	if((FOOTI[f][i]%64)==0) //switch to next asic
+	{
 	  asic_offset[counter_asic] /= stat;
 	  counter_asic++;  stat=0;
 	}
@@ -413,10 +428,22 @@ void analyse(int firstEvent, int max_events, TChain * ch)
       }
     }//end loop detectors
 
+    //Loop cycling through the cluster loop
+    for(int f=0; f<NDETS; f++)
+    { 
+      cout << "\nLooking at FOOT " << foot_id[f] << " with " << data[f].size() << " clusters"; 
+      for(auto c: data[f])
+      {
+	cout << "\n-- Cluster: Size = " << c.size() << ", COG =  " << get_cog(c) << ", Esum = " << get_esum(c);
+      }
+    }  
+
+
     //-------- Inspect how many detectors observed hits
     int mul=0;
     for(int f=0; f<NDETS; f++)
     {
+      // cout << "\nFoot Detector  " << foot_id[f]; << " \tVector Size: " << fdata[f].size();// << "\tVectorContents: " << data[1] << endl;
       if(FOOT[f]<640) continue;
       if(data[f].size()>0) mul++;
     }
@@ -469,6 +496,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
     //tree->Fill();
   }//end of eventloop
 
+
   //------- Plotting everything -------
   for(int f=0; f<NDETS; f++)
   {
@@ -519,7 +547,8 @@ int main(Int_t argc, Char_t* argv[])
   gStyle->SetPalette(kRainBow);
 
   TChain * ch = new TChain("h101");
-  ch->Add("/u/lndgst02/william/roots/run93_unpacked.root");
+  //ch->Add("/u/lndgst02/william/roots/run93_unpacked.root");
+  ch->Add("/u/lndgst02/william/roots/test.root");
   //ch->Add("test.root");
   analyse(0,-1,ch);
   //analyse(0,5e4,ch);
