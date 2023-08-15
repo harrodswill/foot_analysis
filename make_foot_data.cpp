@@ -165,28 +165,28 @@ double AnaWrapper::get_esum(cluster c)//calculate cluster sum
 
 void AnaWrapper::Check_Strip(UInt_t number, double energy, foot_data& fdata)
 {
-    //cout << "\n\n---------------------------------------";
-    //cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
+    cout << "\n\n--- Entering clustering function";
+    cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
     strip_data strip = std::make_pair(number,energy);
     cluster clust;
     if(fdata.size()==0)//no cluster yet, create new
     {
         clust.push_back(strip);
         fdata.push_back(clust);
-        //cout << "\n\t New cluster is created for this strip";
+        cout << "\n\t New cluster is created for this strip";
         return;
     }
     cluster    this_clust = fdata.back();
     strip_data this_strip = this_clust.back();
     if(abs(strip.first-this_strip.first)<2)//neighbour found 
     {
-        //cout << "\n\tStrip belong to exisitng cluster! Adding it...";
+        cout << "\n\tStrip belong to exisitng cluster! Adding it...";
         fdata.back().push_back(strip);
         return;
     }
     else
     {
-        //cout << "\n\tStrip is a new cluster! Making it...";
+        cout << "\n\tStrip is a new cluster! Making it...";
         clust.clear();
         clust.push_back(strip);
         fdata.push_back(clust);
