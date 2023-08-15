@@ -1,5 +1,5 @@
-CXX=clang++
-LINKER=clang++
+CXX=g++
+LINKER=g++
 
 ROOTCONFIG := root-config
 
