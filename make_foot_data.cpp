@@ -4,7 +4,7 @@
 #define NDETS LENGTH(foot_id)
 using namespace std;
 namespace{//don't change this!!!
-    int foot_id[] = {15, 16, 1, 2, 13, 4, 11, 6, 7, 12, 9, 10};
+    int foot_id[] = {15, 16};
 }
 //Histogram binning and ranges
 int Nbins = 1000; double ymin = -500; double ymax = 500;
@@ -101,62 +101,46 @@ void AnaWrapper::Init()
         hname.Form("h1_cluster_e_vs_cog_FOOT%d",foot_id[i]);
         h2_cluster_e_vs_cog[i] = new TH2D(hname.Data(),hname.Data(),640,1,641,200,-10,100);
     }
-    canvas_raw_peds = new TCanvas("canvas_raw_peds","canvas_raw_peds",1800,1200);
-    canvas_raw_peds->Divide(4,3);
+    canvas_raw_peds = new TCanvas("canvas_raw_peds","canvas_raw_peds",1800,900);
+    canvas_raw_peds->Divide(2,1);
 
-    canvas_raw_sigma = new TCanvas("canvas_raw_sigma","canvas_raw_sigma",1800,1200);
-    canvas_raw_sigma->Divide(4,3);
+    canvas_raw_sigma = new TCanvas("canvas_raw_sigma","canvas_raw_sigma",1800,900);
+    canvas_raw_sigma->Divide(2,1);
 
-    canvas_baseline = new TCanvas("canvas_baseline","canvas_baseline",1800,1200);
-    canvas_baseline->Divide(4,3);
+    canvas_baseline = new TCanvas("canvas_baseline","canvas_baseline",1800,900);
+    canvas_baseline->Divide(2,1);
 
 
-    canvas_fine   = new TCanvas("fine","fine",1800,1200);
-    canvas_fine->Divide(4,3);
+    canvas_fine   = new TCanvas("fine","fine",1800,900);
+    canvas_fine->Divide(2,1);
 
-    canvas_cluster_energy   = new TCanvas("cluster_energy","cluster_energy",1800,1200);
-    canvas_cluster_energy->Divide(4,3);
+    canvas_cluster_energy   = new TCanvas("cluster_energy","cluster_energy",1800,900);
+    canvas_cluster_energy->Divide(2,1);
 
-    canvas_cluster_size   = new TCanvas("cluster_size","cluster_size",1800,1200);
-    canvas_cluster_size->Divide(4,3);
+    canvas_cluster_size   = new TCanvas("cluster_size","cluster_size",1800,900);
+    canvas_cluster_size->Divide(2,1);
 
-    canvas_cluster_e_vs_cog   = new TCanvas("cluster_e_vs_cog","cluster_e_vs_cog",1800,1200);
-    canvas_cluster_e_vs_cog->Divide(4,3);
+    canvas_cluster_e_vs_cog   = new TCanvas("cluster_e_vs_cog","cluster_e_vs_cog",1800,900);
+    canvas_cluster_e_vs_cog->Divide(2,1);
 }
 
 //list of bad or dead strips
 bool AnaWrapper::is_good_strip(UInt_t det, UInt_t strip)
 {
-    switch(det){
-        case 1:
-            if(
-                    strip==94 || (strip>506 && strip<513)
-                    || (strip >528 && strip<532)
-              ) return false;
-        case 2:
-            if(
-                    strip==229 
-              ) return false;
-        case 7:
-            if(
-                    strip==344 || strip==597 || strip==598
-              ) return false;
+  switch(det){
+    case 15:
+      if(
+	  strip==344
+	) return false;
+    case 16:
+      if(
+	  strip==16 || strip==114 || (strip>139 && strip<146) || strip==462 || strip==463 || strip==464 ||
+	  strip==465 || strip==466 || strip==409 || strip==410 || strip==426 || strip==433 || strip==434 || strip==440 || strip==520
+	) return false;
+  }
+  if((strip%64)>62 || (strip%64)<3) return false;//edge strips for every asic
+  return true;
 
-        case 12:
-            if(
-                    strip==232
-              ) return false;
-        case 15:
-            if(
-                    strip==204 || strip==203
-              ) return false;
-        case 16:
-            if(
-                    strip==338
-              ) return false;
-    }
-    //if((strip%64)>62 || (strip%64)<3) return false;
-    return true;
 }
 
 double AnaWrapper::get_cog(cluster c)//calculate center of gravity of a cluster
@@ -496,7 +480,7 @@ int main(Int_t argc, Char_t* argv[])
 
     TChain * ch = new TChain("h101");
     //ch->Add("../roots_foots/main0131_0041.root");
-    ch->Add("../roots_foots/run131_0001_stitched.root");
+    ch->Add("/u/lndgst02/william/roots/run93_1_unpacked.root");
     //ch->Add("/Users/vpanin/Desktop/GSI/Experiments/S522/analysis/Tracking/data_unpacked/");
     ana.analyse(0,-1,ch);
     return 0;
