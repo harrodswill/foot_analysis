@@ -165,28 +165,28 @@ double AnaWrapper::get_esum(cluster c)//calculate cluster sum
 
 void AnaWrapper::Check_Strip(UInt_t number, double energy, foot_data& fdata)
 {
-    //cout << "\n\n---------------------------------------";
-    //cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
+    cout << "\n---Entering clustering function!";
+    cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
     strip_data strip = std::make_pair(number,energy);
     cluster clust;
     if(fdata.size()==0)//no cluster yet, create new
     {
         clust.push_back(strip);
         fdata.push_back(clust);
-        //cout << "\n\t New cluster is created for this strip";
+        cout << "New cluster is created for this strip!\n";
         return;
     }
     cluster    this_clust = fdata.back();
     strip_data this_strip = this_clust.back();
     if(abs(strip.first-this_strip.first)<2)//neighbour found 
     {
-        //cout << "\n\tStrip belong to exisitng cluster! Adding it...";
+        cout << "Strip belong to existing cluster, so it is being added!\n";
         fdata.back().push_back(strip);
         return;
     }
     else
     {
-        //cout << "\n\tStrip is a new cluster! Making it...";
+        cout << "Strip is a new cluster, so it is being made!\n";
         clust.clear();
         clust.push_back(strip);
         fdata.push_back(clust);
@@ -260,7 +260,7 @@ void AnaWrapper::Draw_Everything()
         h2_peds_raw[i]->Draw("colz");
         //h2_peds_raw_clean[i]->Draw("colz");
         h1_peds[i]->SetMarkerStyle(kFullCircle);
-        h1_peds[i]->SetMarkerSize(0.1);
+        h1_peds[i]->SetMarkerSize(1);
         h1_peds[i]->SetMarkerColor(kRed);
         h1_peds[i]->SetLineColor(kRed);
         h1_peds[i]->Draw("same");
@@ -269,7 +269,7 @@ void AnaWrapper::Draw_Everything()
         gPad->SetLogz();
         h2_baseline[i]->Draw("colz");
         h1_baseline[i]->SetMarkerStyle(kFullCircle);
-        h1_baseline[i]->SetMarkerSize(0.1);
+        h1_baseline[i]->SetMarkerSize(1);
         h1_baseline[i]->SetMarkerColor(kBlue);
         h1_baseline[i]->SetLineColor(kBlue);
         h1_baseline[i]->Draw("same");
@@ -277,7 +277,7 @@ void AnaWrapper::Draw_Everything()
 
         canvas_raw_sigma->cd(i+1);
         h1_sigma_raw[i]->SetMarkerStyle(kFullCircle);
-        h1_sigma_raw[i]->SetMarkerSize(0.2);
+        h1_sigma_raw[i]->SetMarkerSize(1);
         h1_sigma_raw[i]->SetMarkerColor(kBlue);
         h1_sigma_raw[i]->SetLineColor(kBlue);
         h1_sigma_raw[i]->GetYaxis()->SetRangeUser(-2,10);
@@ -292,6 +292,18 @@ void AnaWrapper::Draw_Everything()
         h1_sigma_fine[i]->SetLineColor(kRed);
         h1_sigma_fine[i]->Draw("same");
 
+	canvas_cluster_energy->cd(i+1);
+	gPad->SetLogy();
+	h1_cluster_e[i]->Draw();
+
+	canvas_cluster_size->cd(i+1);
+	h1_cluster_size[i]->Draw();
+
+	canvas_cluster_e_vs_cog->cd(i+1);
+	h2_cluster_e_vs_cog[i]->Draw("colz");
+
+	canvas_fine->cd(i+1);
+	h2_cal_fine[i]->Draw("colz");
     }
     return;
 }
@@ -383,7 +395,7 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
             }
         }//end detector loop
         stat_baseline++; if(stat_baseline==MAX_STAT_PEDS) break;
-    }//end evetloop
+    }//end eventloop
     Make_FineSigmas(50);
 
     //--------- Final analysis 
@@ -407,7 +419,7 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
     else Nevents = MAX_STAT_ANA;
     for(int ev=0; ev<Nevents; ev++)
     {
-        cout << "\r-- Event # : " << ev << flush;
+        cout << "\n\n-- Event # : " << ev << flush;
         ch->GetEntry(ev);
 
         id_foot.clear();
@@ -441,13 +453,27 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
             {
                 if((FOOTI[f][i]%64) == 1 && FOOTI[f][i]>1) counter_asic++;
                 signal = FOOTE[f][i] - pedestal[f][i] - asic_offset[counter_asic];
+		h2_cal_fine[f]->Fill(FOOTI[f][i], signal);
                 if(signal>(NSIGMA * sigma_fine[f][i]) && 
                         is_good_strip(foot_id[f],FOOTI[f][i]))
                 {
+		    cout << "\nStrip: " << FOOTI[f][i] << " for FOOT: " << foot_id[f] << " has passed the threshold condition, this has Energy: " << signal ;
                     Check_Strip(FOOTI[f][i], signal, fdata[f]);
                 }
             }
         }//end loop detectors
+        //Filling output tree
+
+       //Loop cycling through the cluster loop
+       for(int f=0; f<NDETS; f++)
+       {
+           cout << "\nHere FOOT " << foot_id[f] << " has " << fdata[f].size() << " clusters";
+           for(auto c: fdata[f])
+             {
+	         cout << "\n-- Cluster: Size = " << c.size() << ", COG =  " << get_cog(c) << ", Esum = " << get_esum(c);
+	       }
+         }
+
         //Filling output tree
         for(int f=0; f<NDETS; f++)
         {
@@ -457,8 +483,13 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
                 e_foot.push_back(get_esum(clust));
                 cog_foot.push_back(get_cog(clust));
                 size_foot.push_back(clust.size());
-            }
-        }
+            
+		 h1_cluster_e[f]->Fill( get_esum(clust) );
+	         h1_cluster_size[f]->Fill( clust.size() );
+		 h2_cluster_e_vs_cog[f]->Fill( get_cog(clust), get_esum(clust));
+       
+	    }
+	  }
         tree->Fill();
     }//end of eventloop
     tree->AutoSave();
