@@ -165,7 +165,11 @@ double AnaWrapper::get_esum(cluster c)//calculate cluster sum
 
 void AnaWrapper::Check_Strip(UInt_t number, double energy, foot_data& fdata)
 {
+<<<<<<< HEAD
     cout << "\n---Entering clustering function!";
+=======
+    cout << "\n\n--- Entering clustering function";
+>>>>>>> 5245be6bdbd2f9c03234050b04df7f0b2ecb591a
     cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
     strip_data strip = std::make_pair(number,energy);
     cluster clust;
@@ -173,20 +177,32 @@ void AnaWrapper::Check_Strip(UInt_t number, double energy, foot_data& fdata)
     {
         clust.push_back(strip);
         fdata.push_back(clust);
+<<<<<<< HEAD
         cout << "New cluster is created for this strip!\n";
+=======
+        cout << "\n\t New cluster is created for this strip";
+>>>>>>> 5245be6bdbd2f9c03234050b04df7f0b2ecb591a
         return;
     }
     cluster    this_clust = fdata.back();
     strip_data this_strip = this_clust.back();
     if(abs(strip.first-this_strip.first)<2)//neighbour found 
     {
+<<<<<<< HEAD
         cout << "Strip belong to existing cluster, so it is being added!\n";
+=======
+        cout << "\n\tStrip belong to exisitng cluster! Adding it...";
+>>>>>>> 5245be6bdbd2f9c03234050b04df7f0b2ecb591a
         fdata.back().push_back(strip);
         return;
     }
     else
     {
+<<<<<<< HEAD
         cout << "Strip is a new cluster, so it is being made!\n";
+=======
+        cout << "\n\tStrip is a new cluster! Making it...";
+>>>>>>> 5245be6bdbd2f9c03234050b04df7f0b2ecb591a
         clust.clear();
         clust.push_back(strip);
         fdata.push_back(clust);
