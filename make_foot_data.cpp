@@ -295,6 +295,12 @@ void AnaWrapper::Draw_Everything()
         h1_peds[i]->SetLineColor(kRed);
         h1_peds[i]->Draw("same");
 
+        for (int c=0; c<10; c++)
+        {
+	   TLine * l = new TLine(c*64,0,c*64,1000);
+	   l->Draw();
+        } 
+
         canvas_baseline->cd(i+1);
         gPad->SetLogz();
         h2_baseline[i]->Draw("colz");
@@ -303,6 +309,12 @@ void AnaWrapper::Draw_Everything()
         h1_baseline[i]->SetMarkerColor(kBlue);
         h1_baseline[i]->SetLineColor(kBlue);
         h1_baseline[i]->Draw("same");
+
+        for(int c=0; c<10; c++)
+        {
+           TLine * l = new TLine(c*64,-50,c*64,50);
+           l->Draw();
+        }
 
 
         canvas_raw_sigma->cd(i+1);
@@ -322,6 +334,12 @@ void AnaWrapper::Draw_Everything()
         h1_sigma_fine[i]->SetLineColor(kRed);
         h1_sigma_fine[i]->Draw("same");
 
+        for(int c=0; c<10; c++)
+        {
+	   TLine * l = new TLine(c*64,-2,c*64,10);
+           l->Draw();
+        }
+
 	canvas_cluster_energy->cd(i+1);
 	gPad->SetLogy();
 	h1_cluster_e[i]->Draw();
@@ -332,22 +350,35 @@ void AnaWrapper::Draw_Everything()
 	canvas_cluster_e_vs_cog->cd(i+1);
 	h2_cluster_e_vs_cog[i]->Draw("colz");
 
+        for(int c=0; c<10; c++)
+        {
+	   TLine * l = new TLine(c*64,-10,c*64,100);
+      	l->Draw();
+        }
+
 	canvas_fine->cd(i+1);
 	h2_cal_fine[i]->Draw("colz");
+  
+        for(int c=0; c<10; c++)
+        {
+	   TLine * l = new TLine(c*64,-500,c*64,500);
+	   l->Draw();
+        }
 
-    canvas_det_mul->cd();
-    h1_det_mul->Draw();
 
-    canvas_XY->cd(1);
+	canvas_det_mul->cd();
+	h1_det_mul->Draw();
+
+	canvas_XY->cd(1);
     
-    gPad->SetLogz();
-    h2_beam_XY->Draw("colz");
+	gPad->SetLogz();
+	h2_beam_XY->Draw("colz");
 
-    canvas_XY->cd(2);
-    h1_beam_X->Draw();
+	canvas_XY->cd(2);
+	h1_beam_X->Draw();
 
-    canvas_XY->cd(3);
-    h1_beam_Y->Draw();
+	canvas_XY->cd(3);
+	h1_beam_Y->Draw();
 
 
 
@@ -452,13 +483,13 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
     std::vector<int> size_foot;
     std::vector<double> e_foot;
     std::vector<double> cog_foot;
-    std::vector<double> eta_foot;
+    std::vector<double> mul_foot;
 
     tree->Branch("id_foot",&id_foot);
     tree->Branch("e_foot",&e_foot);
     tree->Branch("cog_foot",&cog_foot);
     tree->Branch("size_foot",&size_foot);
-    tree->Branch("eta_foot",&eta_foot);
+    tree->Branch("mul_foot",&mul_foot);
 
     foot_data fdata[NDETS];
     cout << "\n\n-- Final analysis \n\n";
@@ -471,7 +502,7 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
         size_foot.clear();
         e_foot.clear();
         cog_foot.clear();
-        eta_foot.clear();
+        mul_foot.clear();
 
         for(int f=0; f<NDETS; f++)//loop over all foots
         {
@@ -515,9 +546,19 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
            cout << "\nHere FOOT " << foot_id[f] << " has " << fdata[f].size() << " clusters";
            for(auto c: fdata[f])
              {
-	         cout << "\n-- Cluster: Size = " << c.size() << ", COG =  " << get_cog(c) << ", Esum = " << get_esum(c);
-	       }
-         }
+	       cout << "\n-- Cluster: Size = " << c.size() << ", COG =  " << get_cog(c) << ", Esum = " << get_esum(c);
+	     }
+       }
+
+     int mul=0;
+     for(int f=0; f<NDETS; f++)
+       { 
+       if(FOOT[f]<640) continue;
+       if(fdata[f].size()>0) mul++;
+       }
+     h1_det_mul->Fill(mul);
+
+
 
         //Filling output tree
         for(int f=0; f<NDETS; f++)
@@ -528,15 +569,18 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
                 e_foot.push_back(get_esum(clust));
                 cog_foot.push_back(get_cog(clust));
                 size_foot.push_back(clust.size());
-            
+                mul++;
+		
        	        h1_cluster_e[f]->Fill(get_esum(clust));
 	        h1_cluster_size[f]->Fill(clust.size());
 	        h2_cluster_e_vs_cog[f]->Fill(get_cog(clust), get_esum(clust));
        
 	    }
-	  }
+	    mul_foot.push_back(mul);
+        }
         tree->Fill();
     }//end of eventloop
+    cout << "\n\n--- The program has ended! ---";
     tree->AutoSave();
     Draw_Everything();
 
