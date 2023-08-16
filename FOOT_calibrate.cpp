@@ -332,7 +332,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
     h1_baseline[i]->SetLineColor(kRed);
     h1_baseline[i]->Draw("same");
 
-    canvas_raw_sigma->cd(i+1);
+    canvas_fine->cd(i+1);
     h1_sigma_fine[i]->SetMarkerStyle(kFullCircle);
     h1_sigma_fine[i]->SetMarkerSize(0.2);
     h1_sigma_fine[i]->SetMarkerColor(kRed);
