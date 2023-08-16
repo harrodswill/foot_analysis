@@ -60,7 +60,7 @@ double get_esum(cluster c)//calculate cluster sum
 void Check_Strip(UInt_t number, double energy, foot_data& fdata)
 {
   cout << "\n\n--- Entering clustering function";
-  cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
+  cout << "\nChecking strip: " << number << "\t Energy: " << energy;
   strip_data strip = std::make_pair(number,energy);
   cluster clust;
   if(fdata.size()==0)//no cluster yet, create new
@@ -68,7 +68,6 @@ void Check_Strip(UInt_t number, double energy, foot_data& fdata)
     clust.push_back(strip);
     fdata.push_back(clust);
     cout << "\nNew cluster is created for this strip";
-    return;
   }
   cluster    this_clust = fdata.back();
   strip_data this_strip = this_clust.back();
@@ -209,7 +208,6 @@ void analyse(int firstEvent, int max_events, TChain * ch)
     if(stat==1e4) break;
   }
   //-------  Slicing, fitting, saving raw pedestals and sigmas -------
-  //
   TF1* foo = new TF1("foo","gaus",0,1000);
   for(int i=0; i<NDETS; i++)
   {
@@ -221,16 +219,18 @@ void analyse(int firstEvent, int max_events, TChain * ch)
     canvas_raw_peds->cd(i+1);
     h2_peds_raw[i]->Draw("colz");
     h1_peds[i]->SetMarkerStyle(kFullCircle);
-    h1_peds[i]->SetMarkerSize(1);
-    h1_peds[i]->SetMarkerColor(kBlack);
+    h1_peds[i]->SetMarkerSize(10);
+    //h1_peds[i]->SetMarkerColor(kBlack);
     h1_peds[i]->SetLineColor(kBlack);
+    h1_peds[i]->SetLineWidth(2);
     h1_peds[i]->Draw("same");
 
-    for(int c=0; c<10; c++)
+
+   /* for(int c=0; c<10; c++)
     {
       TLine * l = new TLine(c*64,0,c*64,1500);
       l->Draw();
-    } 
+    }*/ 
 
     canvas_raw_sigma->cd(i+1);
     h1_sigma_raw[i]->SetMarkerStyle(kFullCircle);
@@ -273,7 +273,7 @@ void analyse(int firstEvent, int max_events, TChain * ch)
       mean_ssd=0; stat=0;
       for(int i=0; i<640; i++)
       {
-	if(!is_good_strip(foot_id[f],FOOTI[f][i])) continue; 
+        if(!is_good_strip(foot_id[f],FOOTI[f][i])) continue; 
 	signal = FOOTE[f][i] - pedestal[f][i];
 	if(fabs(signal) > (10 * sigma[f][i])) continue; //possible hit candidate
 	stat++;    mean_ssd += signal;
@@ -350,7 +350,8 @@ void analyse(int firstEvent, int max_events, TChain * ch)
   {
     cout << "\n\n------- Event # : " << ev << "\n\n";
     ch->GetEntry(ev);
-    //--------  Global base line correction in every FOOT in this event ---------
+    if(FOOT[0] != 640 && FOOT[1] != 640) continue;
+    //--------  Global base line correction in every FOOT in this event -uster is created for this strip-------
     for(int f=0; f<NDETS; f++)//loop over all foots
     {
       //  cout << "\nPerforming global baseline correction for FOOT: " << foot_id[f];
@@ -547,10 +548,10 @@ int main(Int_t argc, Char_t* argv[])
   gStyle->SetPalette(kRainBow);
 
   TChain * ch = new TChain("h101");
-  //ch->Add("/u/lndgst02/william/roots/run93_unpacked.root");
-  ch->Add("/u/lndgst02/william/roots/test.root");
+  //ch->Add("/u/lndgst02/william/roots/test_william_2.root");
+  ch->Add("/u/lndgst02/william/roots/run93_1_unpacked.root");
   //ch->Add("test.root");
-  analyse(0,-1,ch);
-  //analyse(0,5e4,ch);
+  //analyse(0,-1,ch);
+  analyse(0,5e4,ch);
   return 0;
 }
