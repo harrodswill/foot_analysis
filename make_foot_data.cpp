@@ -165,44 +165,37 @@ double AnaWrapper::get_esum(cluster c)//calculate cluster sum
 
 void AnaWrapper::Check_Strip(UInt_t number, double energy, foot_data& fdata)
 {
-<<<<<<< HEAD
     cout << "\n---Entering clustering function!";
-=======
     cout << "\n\n--- Entering clustering function";
->>>>>>> 5245be6bdbd2f9c03234050b04df7f0b2ecb591a
     cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
+ 
     strip_data strip = std::make_pair(number,energy);
+ 
     cluster clust;
+ 
     if(fdata.size()==0)//no cluster yet, create new
     {
         clust.push_back(strip);
         fdata.push_back(clust);
-<<<<<<< HEAD
+
         cout << "New cluster is created for this strip!\n";
-=======
         cout << "\n\t New cluster is created for this strip";
->>>>>>> 5245be6bdbd2f9c03234050b04df7f0b2ecb591a
+
         return;
     }
     cluster    this_clust = fdata.back();
     strip_data this_strip = this_clust.back();
     if(abs(strip.first-this_strip.first)<2)//neighbour found 
     {
-<<<<<<< HEAD
         cout << "Strip belong to existing cluster, so it is being added!\n";
-=======
         cout << "\n\tStrip belong to exisitng cluster! Adding it...";
->>>>>>> 5245be6bdbd2f9c03234050b04df7f0b2ecb591a
         fdata.back().push_back(strip);
         return;
     }
     else
     {
-<<<<<<< HEAD
         cout << "Strip is a new cluster, so it is being made!\n";
-=======
         cout << "\n\tStrip is a new cluster! Making it...";
->>>>>>> 5245be6bdbd2f9c03234050b04df7f0b2ecb591a
         clust.clear();
         clust.push_back(strip);
         fdata.push_back(clust);
@@ -276,7 +269,7 @@ void AnaWrapper::Draw_Everything()
         h2_peds_raw[i]->Draw("colz");
         //h2_peds_raw_clean[i]->Draw("colz");
         h1_peds[i]->SetMarkerStyle(kFullCircle);
-        h1_peds[i]->SetMarkerSize(1);
+        h1_peds[i]->SetMarkerSize(0.2);
         h1_peds[i]->SetMarkerColor(kRed);
         h1_peds[i]->SetLineColor(kRed);
         h1_peds[i]->Draw("same");
@@ -285,7 +278,7 @@ void AnaWrapper::Draw_Everything()
         gPad->SetLogz();
         h2_baseline[i]->Draw("colz");
         h1_baseline[i]->SetMarkerStyle(kFullCircle);
-        h1_baseline[i]->SetMarkerSize(1);
+        h1_baseline[i]->SetMarkerSize(0.2);
         h1_baseline[i]->SetMarkerColor(kBlue);
         h1_baseline[i]->SetLineColor(kBlue);
         h1_baseline[i]->Draw("same");
@@ -293,7 +286,7 @@ void AnaWrapper::Draw_Everything()
 
         canvas_raw_sigma->cd(i+1);
         h1_sigma_raw[i]->SetMarkerStyle(kFullCircle);
-        h1_sigma_raw[i]->SetMarkerSize(1);
+        h1_sigma_raw[i]->SetMarkerSize(0.2);
         h1_sigma_raw[i]->SetMarkerColor(kBlue);
         h1_sigma_raw[i]->SetLineColor(kBlue);
         h1_sigma_raw[i]->GetYaxis()->SetRangeUser(-2,10);
@@ -527,7 +520,7 @@ int main(Int_t argc, Char_t* argv[])
 
     TChain * ch = new TChain("h101");
     //ch->Add("../roots_foots/main0131_0041.root");
-    ch->Add("/u/lndgst02/william/roots/run93_1_unpacked.root");
+    ch->Add("/u/lndgst02/william/roots/run102_unpacked.root");
     //ch->Add("/Users/vpanin/Desktop/GSI/Experiments/S522/analysis/Tracking/data_unpacked/");
     ana.analyse(0,-1,ch);
     return 0;
