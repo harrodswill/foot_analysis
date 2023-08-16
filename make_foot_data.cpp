@@ -11,7 +11,6 @@ int Nbins = 1000; double ymin = -500; double ymax = 500;
 const double    FOOT_LENGTH   = 96.;//mm
 const double    NSIGMA        = 4;
 const int MAX_STAT_PEDS = 3e4;
-const int MAX_STAT_ANA = -1;
 
 //Clustering data structures
 typedef std::pair<int, double> strip_data;
@@ -50,6 +49,10 @@ class AnaWrapper : public TObject
         TH1D * h1_cluster_e[NDETS];
         TH1I * h1_cluster_size[NDETS];
         TH2D * h2_cluster_e_vs_cog[NDETS];
+        TH2D * h2_beam_XY;
+        TH1D * h1_beam_X;
+        TH1D * h1_beam_Y;
+	TH1I * h1_det_mul;
 
         //---------- Definition of canvases
         TCanvas * canvas_raw_peds;
@@ -59,7 +62,9 @@ class AnaWrapper : public TObject
         TCanvas * canvas_cluster_energy;
         TCanvas * canvas_cluster_size;
         TCanvas * canvas_cluster_e_vs_cog;
-        bool is_plot;
+        TCanvas * canvas_det_mul;
+	TCanvas * canvas_XY;
+	bool is_plot;
         bool is_good;
 };
 
@@ -101,6 +106,16 @@ void AnaWrapper::Init()
         hname.Form("h1_cluster_e_vs_cog_FOOT%d",foot_id[i]);
         h2_cluster_e_vs_cog[i] = new TH2D(hname.Data(),hname.Data(),640,1,641,200,-10,100);
     }
+ 
+    h1_det_mul = new TH1I("det_mul","det_mul",10,0,10);
+
+    h2_beam_XY = new TH2D(Form("h2_beam_XY"),Form("h2_beam_XY"),100,-50,50,100,-50,50);
+    //h2_beam_XY = new TH2D(Form("h2_beam_XY"),Form("h2_beam_XY"),640,0,640,640,0,640);                                                            
+    h1_beam_X = new TH1D(Form("h1_beam_X"),Form("h1_beam_X"),640,0,640);
+    h1_beam_X = new TH1D(Form("h1_beam_X"),Form("h1_beam_X"),640,0,640);
+    h1_beam_Y = new TH1D(Form("h1_beam_Y"),Form("h1_beam_Y"),640,0,640);
+
+ 
     canvas_raw_peds = new TCanvas("canvas_raw_peds","canvas_raw_peds",1800,900);
     canvas_raw_peds->Divide(2,1);
 
@@ -109,7 +124,6 @@ void AnaWrapper::Init()
 
     canvas_baseline = new TCanvas("canvas_baseline","canvas_baseline",1800,900);
     canvas_baseline->Divide(2,1);
-
 
     canvas_fine   = new TCanvas("fine","fine",1800,900);
     canvas_fine->Divide(2,1);
@@ -122,6 +136,13 @@ void AnaWrapper::Init()
 
     canvas_cluster_e_vs_cog   = new TCanvas("cluster_e_vs_cog","cluster_e_vs_cog",1800,900);
     canvas_cluster_e_vs_cog->Divide(2,1);
+
+    canvas_det_mul = new TCanvas("det_mul","det_mul",1800,1200);
+ 
+    canvas_XY = new TCanvas("canvas_XY","canvas_XY",1200,1200);
+    canvas_XY->Divide(2,2);
+   
+
 }
 
 //list of bad or dead strips
@@ -313,6 +334,23 @@ void AnaWrapper::Draw_Everything()
 
 	canvas_fine->cd(i+1);
 	h2_cal_fine[i]->Draw("colz");
+
+    canvas_det_mul->cd();
+    h1_det_mul->Draw();
+
+    canvas_XY->cd(1);
+    
+    gPad->SetLogz();
+    h2_beam_XY->Draw("colz");
+
+    canvas_XY->cd(2);
+    h1_beam_X->Draw();
+
+    canvas_XY->cd(3);
+    h1_beam_Y->Draw();
+
+
+
     }
     return;
 }
@@ -424,8 +462,6 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
 
     foot_data fdata[NDETS];
     cout << "\n\n-- Final analysis \n\n";
-    if(MAX_STAT_ANA<0) Nevents=ch->GetEntries();
-    else Nevents = MAX_STAT_ANA;
     for(int ev=0; ev<Nevents; ev++)
     {
         cout << "\n\n-- Event # : " << ev << flush;
@@ -493,9 +529,9 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
                 cog_foot.push_back(get_cog(clust));
                 size_foot.push_back(clust.size());
             
-		 h1_cluster_e[f]->Fill( get_esum(clust) );
-	         h1_cluster_size[f]->Fill( clust.size() );
-		 h2_cluster_e_vs_cog[f]->Fill( get_cog(clust), get_esum(clust));
+       	        h1_cluster_e[f]->Fill(get_esum(clust));
+	        h1_cluster_size[f]->Fill(clust.size());
+	        h2_cluster_e_vs_cog[f]->Fill(get_cog(clust), get_esum(clust));
        
 	    }
 	  }
@@ -520,8 +556,9 @@ int main(Int_t argc, Char_t* argv[])
 
     TChain * ch = new TChain("h101");
     //ch->Add("../roots_foots/main0131_0041.root");
-    ch->Add("/u/lndgst02/william/roots/run102_unpacked.root");
+    ch->Add("/u/lndgst02/william/roots/run93_1_unpacked.root");
     //ch->Add("/Users/vpanin/Desktop/GSI/Experiments/S522/analysis/Tracking/data_unpacked/");
-    ana.analyse(0,-1,ch);
+    //ana.analyse(0,-1,ch);
+    ana.analyse(0,100000,ch);
     return 0;
 }
