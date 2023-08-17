@@ -35,6 +35,7 @@ class AnaWrapper : public TObject
         void Make_FineSigmas(int threshold);
         void Make_Pedestals(int threshold);
         void Draw_Everything();
+        void Calc_Efficiency(int firstDet, int secondDet, double firstMax, double firstMin, double secondMax, double secondMin, double e_thres, foot_data& fdata);
 
         //---------- Definition of main  histograms ----------------
         TH2F * h2_peds_raw[NDETS];
@@ -151,12 +152,11 @@ bool AnaWrapper::is_good_strip(UInt_t det, UInt_t strip)
   switch(det){
     case 15:
       if(
-	  strip==344
+	  strip==164 || strip==303 || strip==329 || strip==330 || strip==369 || strip ==370 || strip==344
 	) return false;
     case 16:
       if(
-	  strip==16 || strip==114 || (strip>139 && strip<146) || strip==462 || strip==463 || strip==464 ||
-	  strip==465 || strip==466 || strip==409 || strip==410 || strip==426 || strip==433 || strip==434 || strip==440 || strip==520
+	 strip==8 || strip==16 || strip==114 || (strip>139 && strip<146) || strip==229 || strip==230 || strip==409 || strip==410 || strip==426 || strip==433 || strip==434 || strip==440 || (strip>461 && strip<467) || strip==520
 	) return false;
   }
   if((strip%64)>62 || (strip%64)<3) return false;//edge strips for every asic
@@ -280,6 +280,18 @@ void AnaWrapper::Make_Pedestals(int threshold)
     }
     return;
 }
+
+/*
+void AnaWrapper::Calc_Efficiency(int firstDet, int secondDet, double firstMax, double firstMin, double secondMax, double secondMin, double e_thres, foot_data& fdata)
+{
+  int N_first = 0;
+  int N_first_if_second;
+  bool is_first = false; 
+  bool is_second = false;
+  for(auto & c: fdata[firstDet])
+  {
+*/    
+   
 
 void AnaWrapper::Draw_Everything()
 {
@@ -599,8 +611,25 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
                h1_beam_Y->Fill(Y);
 	   }
        }
+/*
+     //Counters for he efficiency estimation
+     int N15 = 0;
+     int N16 = 0;
+     int N15_if_16 = 0;
+     int N16_if_15 = 0;
+		     
+     //Defines variables to test efficiency
+     bool is15 = false;
+     bool is16 = false;
+     double Ymin= -12;
+     double Ymax= 4;
+     double Xmin= -8;
+     double Xmax= 6;
+     double e_thres = 10;
 
-
+     //Estimate efficiency of every detector
+     for(auto & c1: fdata
+*/
        //Filling output tree
        for(int f=0; f<NDETS; f++)
         {
