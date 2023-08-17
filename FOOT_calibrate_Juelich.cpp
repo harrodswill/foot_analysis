@@ -429,7 +429,28 @@ void analyse(int firstEvent, int max_events, TChain * ch)
                     Y = (get_cog(c0)*FOOT_LENGTH/640.- FOOT_LENGTH/2.);
                     h2_beam_XY->Fill(X,Y);
                     //h2_beam_XY->Fill(get_cog(c1),get_cog(c0));
-                    h1_beam_X->Fill(X);
+         (uto & c0: data[0]){
+             Y = (get_cog(c0)*FOOT_LENGTH/640.- FOOT_LENGTH/2.);
+              if(Y>Ymin && Y<Ymax && get_esum(c0)>10){
+                   is15 = true;
+                   break;
+            }
+        }
+        if(is15){
+             N15++;
+               for(auto & c1: data[1]){
+                    xp = get_cog(c1);
+                   X = (-1)*(xp*FOOT_LENGTH/640.- FOOT_LENGTH/2.);
+                if(X>Xmin && X<Xmax)
+                {
+                    h1_cluster_e[1]->Fill( get_esum(c1) );
+                      is16 = true;
+                      break;
+                }
+            }
+        }
+        if(is16)  N16_if_15++;
+	h1_beam_X->Fill(X);
                     h1_beam_Y->Fill(Y);
 
                     //h1_beam_X->Fill(get_cog(c1));
@@ -594,7 +615,7 @@ int main(Int_t argc, Char_t* argv[])
     TChain * ch = new TChain("h101");
     //ch->Add("run14_1.root");
     ch->Add("test.root");
-    analyse(0,-1,ch);
-    //analyse(0,1e6,ch);
+    //analyse(0,-1,ch);
+    analyse(0,1e6,ch);
     return 0;
 }
