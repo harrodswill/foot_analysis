@@ -287,7 +287,10 @@ void AnaWrapper::Draw_Everything()
     for(int i=0; i<NDETS; i++)
     {
         canvas_raw_peds->cd(i+1);
-        h2_peds_raw[i]->Draw("colz");
+	h2_peds_raw[i]->GetXaxis()->SetTitle("Strip Number");
+	h2_peds_raw[i]->GetYaxis()->SetTitle("Uncalibrated Signal");
+	h2_peds_raw[i]->GetZaxis()->SetTitle("Signal Intensity");
+	h2_peds_raw[i]->Draw("colz");
         //h2_peds_raw_clean[i]->Draw("colz");
         h1_peds[i]->SetMarkerStyle(kFullCircle);
         h1_peds[i]->SetMarkerSize(0.2);
@@ -302,10 +305,13 @@ void AnaWrapper::Draw_Everything()
         } 
 
         canvas_baseline->cd(i+1);
-        gPad->SetLogz();
+        h2_baseline[i]->GetXaxis()->SetTitle("Strip Number");
+	gPad->SetLogz();
+	h2_baseline[i]->GetYaxis()->SetTitle("Baseline Corrected Signal");
+	h2_baseline[i]->GetZaxis()->SetTitle("Signal Intensity");
         h2_baseline[i]->Draw("colz");
         h1_baseline[i]->SetMarkerStyle(kFullCircle);
-        h1_baseline[i]->SetMarkerSize(0.2);
+    	h1_baseline[i]->SetMarkerSize(0.2);
         h1_baseline[i]->SetMarkerColor(kBlue);
         h1_baseline[i]->SetLineColor(kBlue);
         h1_baseline[i]->Draw("same");
@@ -323,8 +329,8 @@ void AnaWrapper::Draw_Everything()
         h1_sigma_raw[i]->SetMarkerColor(kBlue);
         h1_sigma_raw[i]->SetLineColor(kBlue);
         h1_sigma_raw[i]->GetYaxis()->SetRangeUser(-2,10);
-        h1_sigma_raw[i]->GetXaxis()->SetTitle("Strip No.");
-        h1_sigma_raw[i]->GetYaxis()->SetTitle("ADC sigma");
+        h1_sigma_raw[i]->GetXaxis()->SetTitle("Strip Number");
+        h1_sigma_raw[i]->GetYaxis()->SetTitle("ADC Sigma");
         //h1_sigma_raw[i]->SetTitle("Sigmas before baseline correction");
         h1_sigma_raw[i]->Draw();
 
@@ -342,12 +348,20 @@ void AnaWrapper::Draw_Everything()
 
 	canvas_cluster_energy->cd(i+1);
 	gPad->SetLogy();
+	h1_cluster_e[i]->GetXaxis()->SetTitle("Cluster Energy Sum");
+	h1_cluster_e[i]->GetYaxis()->SetTitle("Number of Clusters");
 	h1_cluster_e[i]->Draw();
 
 	canvas_cluster_size->cd(i+1);
+	h1_cluster_size[i]->GetXaxis()->SetTitle("Number of Strips in Cluster");
+	h1_cluster_size[i]->GetYaxis()->SetTitle("Number of Clusters");
+	gPad->SetLogy();
 	h1_cluster_size[i]->Draw();
 
 	canvas_cluster_e_vs_cog->cd(i+1);
+	h2_cluster_e_vs_cog[i]->GetXaxis()->SetTitle("Strip Number");
+	h2_cluster_e_vs_cog[i]->GetYaxis()->SetTitle("Cluster Energy Sum");
+	h2_cluster_e_vs_cog[i]->GetZaxis()->SetTitle("Cluster Centre of Gravity");
 	h2_cluster_e_vs_cog[i]->Draw("colz");
 
         for(int c=0; c<10; c++)
@@ -357,6 +371,9 @@ void AnaWrapper::Draw_Everything()
         }
 
 	canvas_fine->cd(i+1);
+	h2_cal_fine[i]->GetXaxis()->SetTitle("Strip Number");
+	h2_cal_fine[i]->GetYaxis()->SetTitle("Calibrated Fine Sigma");
+	h2_cal_fine[i]->GetZaxis()->SetTitle("Signal Intensity");
 	h2_cal_fine[i]->Draw("colz");
   
         for(int c=0; c<10; c++)
@@ -367,17 +384,26 @@ void AnaWrapper::Draw_Everything()
 
 
 	canvas_det_mul->cd();
+	h1_det_mul->GetXaxis()->SetTitle("Number of Detectors Picking Up an Event");
+	h1_det_mul->GetYaxis()->SetTitle("Number of Events");
 	h1_det_mul->Draw();
 
 	canvas_XY->cd(1);
     
 	gPad->SetLogz();
+	h2_beam_XY->GetXaxis()->SetTitle("X-position (cm)");
+	h2_beam_XY->GetYaxis()->SetTitle("Y-position (cm)");
+        h2_beam_XY->GetZaxis()->SetTitle("Signal Intensity");
 	h2_beam_XY->Draw("colz");
 
 	canvas_XY->cd(2);
+	h1_beam_X->GetXaxis()->SetTitle("Strip Number");
+	h1_beam_X->GetYaxis()->SetTitle("Number of Hits");
 	h1_beam_X->Draw();
 
 	canvas_XY->cd(3);
+	h1_beam_Y->GetXaxis()->SetTitle("Strip Number");
+	h1_beam_Y->GetYaxis()->SetTitle("Number of Hits");
 	h1_beam_Y->Draw();
 
 
@@ -549,19 +575,34 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
 	       cout << "\n-- Cluster: Size = " << c.size() << ", COG =  " << get_cog(c) << ", Esum = " << get_esum(c);
 	     }
        }
-
-     int mul=0;
-     for(int f=0; f<NDETS; f++)
+     //Loop for filling in the multiplicty graph
+       int mul=0;
+       for(int f=0; f<NDETS; f++)
        { 
        if(FOOT[f]<640) continue;
        if(fdata[f].size()>0) mul++;
        }
-     h1_det_mul->Fill(mul);
+       h1_det_mul->Fill(mul);
+
+     //Plot beam profile
+     double X, Y, xp;
+     for(auto & c0: fdata[0])
+       {
+	   for(auto & c1: fdata[1])
+           {
+	       xp = get_cog(c1);
+	       X = (-1)*(xp*FOOT_LENGTH/640.- FOOT_LENGTH/2.);
+	       Y = (get_cog(c0)*FOOT_LENGTH/640.- FOOT_LENGTH/2.);
+	       h2_beam_XY->Fill(X,Y);
+               //h2_beam_XY->Fill(get_cog(c1),get_cog(c0));
+	       h1_beam_X->Fill(X);
+               h1_beam_Y->Fill(Y);
+	   }
+       }
 
 
-
-        //Filling output tree
-        for(int f=0; f<NDETS; f++)
+       //Filling output tree
+       for(int f=0; f<NDETS; f++)
         {
             for(auto & clust: fdata[f])
             {
@@ -603,6 +644,6 @@ int main(Int_t argc, Char_t* argv[])
     ch->Add("/u/lndgst02/william/roots/run93_1_unpacked.root");
     //ch->Add("/Users/vpanin/Desktop/GSI/Experiments/S522/analysis/Tracking/data_unpacked/");
     //ana.analyse(0,-1,ch);
-    ana.analyse(0,100000,ch);
+    ana.analyse(0,10000,ch);
     return 0;
 }
