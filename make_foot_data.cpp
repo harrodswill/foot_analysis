@@ -35,7 +35,8 @@ class AnaWrapper : public TObject
         void Make_FineSigmas(int threshold);
         void Make_Pedestals(int threshold);
         void Draw_Everything();
-        void Calc_Efficiency(int firstDet, int secondDet, double firstMax, double firstMin, double secondMax, double secondMin, double e_thres, foot_data& fdata);
+  	bool eff_loop1(double max, double min, double e_thres, foot_data& fdata);
+	bool eff_loop2(double max, double min, foot_data& fdata);
 
         //---------- Definition of main  histograms ----------------
         TH2F * h2_peds_raw[NDETS];
@@ -281,17 +282,38 @@ void AnaWrapper::Make_Pedestals(int threshold)
     return;
 }
 
-/*
-void AnaWrapper::Calc_Efficiency(int firstDet, int secondDet, double firstMax, double firstMin, double secondMax, double secondMin, double e_thres, foot_data& fdata)
+
+bool AnaWrapper::eff_loop1(double max, double min, double e_thres, foot_data& fdata)
 {
-  int N_first = 0;
-  int N_first_if_second;
-  bool is_first = false; 
-  bool is_second = false;
-  for(auto & c: fdata[firstDet])
+  bool is= false; 
+  for(auto & c: fdata)
   {
-*/    
-   
+    double coord;
+    coord = (get_cog(c)*FOOT_LENGTH/640. - FOOT_LENGTH/2.);
+    if(coord>min && coord<max && get_esum(c)>e_thres)
+    {
+      is = true;
+      break;
+    }
+  }
+  return is;
+}
+
+bool AnaWrapper::eff_loop2(double max, double min, foot_data& fdata)
+{
+  bool is = false;
+  for(auto & c: fdata)
+  {
+    double coord;
+    coord = (get_cog(c)*FOOT_LENGTH/640. - FOOT_LENGTH/2.);
+    if(coord>min && coord>max)
+    {
+      is = true;
+      break;
+    }
+  }
+  return is;
+} 
 
 void AnaWrapper::Draw_Everything()
 {
@@ -403,8 +425,8 @@ void AnaWrapper::Draw_Everything()
 	canvas_XY->cd(1);
     
 	gPad->SetLogz();
-	h2_beam_XY->GetXaxis()->SetTitle("X-position (cm)");
-	h2_beam_XY->GetYaxis()->SetTitle("Y-position (cm)");
+	h2_beam_XY->GetXaxis()->SetTitle("X-position (mm)");
+	h2_beam_XY->GetYaxis()->SetTitle("Y-position (mm)");
         h2_beam_XY->GetZaxis()->SetTitle("Signal Intensity");
 	h2_beam_XY->Draw("colz");
 
@@ -611,26 +633,43 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
                h1_beam_Y->Fill(Y);
 	   }
        }
-/*
-     //Counters for he efficiency estimation
+
+     //Counters for the efficiency estimation
      int N15 = 0;
      int N16 = 0;
      int N15_if_16 = 0;
      int N16_if_15 = 0;
 		     
      //Defines variables to test efficiency
-     bool is15 = false;
-     bool is16 = false;
      double Ymin= -12;
      double Ymax= 4;
      double Xmin= -8;
      double Xmax= 6;
-     double e_thres = 10;
+     double e_threshold = 10;
+
 
      //Estimate efficiency of every detector
-     for(auto & c1: fdata
-*/
-       //Filling output tree
+     if(eff_loop1(Ymax,Ymin,e_threshold,fdata[0]))
+     {
+      N15++;
+      if(eff_loop2(Xmax,Xmin,fdata[1]))
+      {
+	N16_if_15++;
+      }
+     }
+
+     if(eff_loop1(Xmax,Xmin,e_threshold,fdata[1]))
+     {
+      N16++;
+      if(eff_loop2(Ymax,Ymin,fdata[0]))
+      {
+	N15_if_16++;
+      }	
+     } 
+       
+       
+     
+     //Filling output tree
        for(int f=0; f<NDETS; f++)
         {
             for(auto & clust: fdata[f])
@@ -650,6 +689,16 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
         }
         tree->Fill();
     }//end of eventloop
+  
+    double Eff_15;
+    double Eff_16;
+
+    Eff_16 = (double)N16_if_15/(double)N15 * 100;
+    Eff_15 = (double)N15_if_16/(double)N16 * 100;
+
+    cout << "\n\n Efficiency of F16: " << Eff_16 << "%\n\n";
+    cout << "\n\n Efficiency of F15: " << Eff_15 << "%\n\n";
+   
     cout << "\n\n--- The program has ended! ---";
     tree->AutoSave();
     Draw_Everything();
