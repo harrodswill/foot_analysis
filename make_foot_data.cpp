@@ -1,4 +1,4 @@
-#include"libs.hh"
+#include "libs.hh"
 #include <TMathBase.h>
 #define LENGTH(x) (sizeof x / sizeof *x)
 #define NDETS LENGTH(foot_id)
@@ -10,7 +10,15 @@ namespace{//don't change this!!!
 int Nbins = 1000; double ymin = -500; double ymax = 500;
 const double    FOOT_LENGTH   = 96.;//mm
 const double    NSIGMA        = 4;
-const int MAX_STAT_PEDS = 3e4;
+const int MAX_STAT_PEDS = 5e4;
+
+//Defines variables to define efficiency test areas
+double Ymin= 25;
+double Ymax= 50;
+double Xmin= 25;
+double Xmax= 50;
+double e_threshold = 0;
+
 
 //Clustering data structures
 typedef std::pair<int, double> strip_data;
@@ -111,11 +119,10 @@ void AnaWrapper::Init()
  
     h1_det_mul = new TH1I("det_mul","det_mul",10,0,10);
 
-    h2_beam_XY = new TH2D(Form("h2_beam_XY"),Form("h2_beam_XY"),100,-50,50,100,-50,50);
+    h2_beam_XY = new TH2D(Form("h2_beam_XY"),Form("h2_beam_XY"),640,-50,50,640,-50,50);
     //h2_beam_XY = new TH2D(Form("h2_beam_XY"),Form("h2_beam_XY"),640,0,640,640,0,640);                                                            
-    h1_beam_X = new TH1D(Form("h1_beam_X"),Form("h1_beam_X"),640,0,640);
-    h1_beam_X = new TH1D(Form("h1_beam_X"),Form("h1_beam_X"),640,0,640);
-    h1_beam_Y = new TH1D(Form("h1_beam_Y"),Form("h1_beam_Y"),640,0,640);
+    h1_beam_X = new TH1D(Form("h1_beam_X"),Form("h1_beam_X"),640,-50,50);
+    h1_beam_Y = new TH1D(Form("h1_beam_Y"),Form("h1_beam_Y"),640,-50,50);
 
  
     canvas_raw_peds = new TCanvas("canvas_raw_peds","canvas_raw_peds",1800,900);
@@ -153,14 +160,15 @@ bool AnaWrapper::is_good_strip(UInt_t det, UInt_t strip)
   switch(det){
     case 15:
       if(
-	  strip==164 || strip==303 || strip==329 || strip==330 || strip==369 || strip ==370 || strip==344
+	  strip==344
 	) return false;
     case 16:
       if(
-	 strip==8 || strip==16 || strip==114 || (strip>139 && strip<146) || strip==229 || strip==230 || strip==409 || strip==410 || strip==426 || strip==433 || strip==434 || strip==440 || (strip>461 && strip<467) || strip==520
+	  strip==229 || strip==230 || strip==359 || strip==20
+
 	) return false;
   }
-  if((strip%64)>62 || (strip%64)<3) return false;//edge strips for every asic
+  if((strip%64)>63 || (strip%64)<2) return false;//edge strips for every asic
   return true;
 
 }
@@ -187,9 +195,9 @@ double AnaWrapper::get_esum(cluster c)//calculate cluster sum
 
 void AnaWrapper::Check_Strip(UInt_t number, double energy, foot_data& fdata)
 {
-    cout << "\n---Entering clustering function!";
-    cout << "\n\n--- Entering clustering function";
-    cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
+    //cout << "\n---Entering clustering function!";
+    //cout << "\n\n--- Entering clustering function";
+    //cout << "\nChecking strip: " << number << "\t Energy: " << energy << endl;
  
     strip_data strip = std::make_pair(number,energy);
  
@@ -200,8 +208,8 @@ void AnaWrapper::Check_Strip(UInt_t number, double energy, foot_data& fdata)
         clust.push_back(strip);
         fdata.push_back(clust);
 
-        cout << "New cluster is created for this strip!\n";
-        cout << "\n\t New cluster is created for this strip";
+        //cout << "New cluster is created for this strip!\n";
+        //cout << "\n\t New cluster is created for this strip";
 
         return;
     }
@@ -209,15 +217,15 @@ void AnaWrapper::Check_Strip(UInt_t number, double energy, foot_data& fdata)
     strip_data this_strip = this_clust.back();
     if(abs(strip.first-this_strip.first)<2)//neighbour found 
     {
-        cout << "Strip belong to existing cluster, so it is being added!\n";
-        cout << "\n\tStrip belong to exisitng cluster! Adding it...";
+        //cout << "Strip belong to existing cluster, so it is being added!\n";
+        //cout << "\n\tStrip belong to exisitng cluster! Adding it...";
         fdata.back().push_back(strip);
         return;
     }
     else
     {
-        cout << "Strip is a new cluster, so it is being made!\n";
-        cout << "\n\tStrip is a new cluster! Making it...";
+        //cout << "Strip is a new cluster, so it is being made!\n";
+        //cout << "\n\tStrip is a new cluster! Making it...";
         clust.clear();
         clust.push_back(strip);
         fdata.push_back(clust);
@@ -289,7 +297,7 @@ bool AnaWrapper::eff_loop1(double max, double min, double e_thres, foot_data& fd
   for(auto & c: fdata)
   {
     double coord;
-    coord = (get_cog(c)*FOOT_LENGTH/640. - FOOT_LENGTH/2.);
+    coord = get_cog(c)*FOOT_LENGTH/640. - FOOT_LENGTH/2.;
     if(coord>min && coord<max && get_esum(c)>e_thres)
     {
       is = true;
@@ -305,15 +313,15 @@ bool AnaWrapper::eff_loop2(double max, double min, foot_data& fdata)
   for(auto & c: fdata)
   {
     double coord;
-    coord = (get_cog(c)*FOOT_LENGTH/640. - FOOT_LENGTH/2.);
-    if(coord>min && coord>max)
+    coord = get_cog(c)*FOOT_LENGTH/640. - FOOT_LENGTH/2.;
+    if(coord>min && coord<max)
     {
       is = true;
       break;
     }
   }
   return is;
-} 
+}  
 
 void AnaWrapper::Draw_Everything()
 {
@@ -430,17 +438,38 @@ void AnaWrapper::Draw_Everything()
         h2_beam_XY->GetZaxis()->SetTitle("Signal Intensity");
 	h2_beam_XY->Draw("colz");
 
+        TBox * box = new TBox(Xmin,Ymin,Xmax,Ymax);
+        box->SetFillStyle(0);
+	box->SetLineColor(kBlack);
+	box->SetLineWidth(2);
+	box->Draw();
+
+	
 	canvas_XY->cd(2);
 	h1_beam_X->GetXaxis()->SetTitle("Strip Number");
 	h1_beam_X->GetYaxis()->SetTitle("Number of Hits");
 	h1_beam_X->Draw();
+
+        TLine * lxmin = new TLine(Xmin,0,Xmin,125);
+        lxmin->SetLineColor(kRed);
+	lxmin->Draw();
+
+	TLine * lxmax = new TLine(Xmax,0,Xmax,125);
+	lxmax->SetLineColor(kRed);
+	lxmax->Draw();
 
 	canvas_XY->cd(3);
 	h1_beam_Y->GetXaxis()->SetTitle("Strip Number");
 	h1_beam_Y->GetYaxis()->SetTitle("Number of Hits");
 	h1_beam_Y->Draw();
 
+	TLine * lymin = new TLine(Ymin,0,Ymin,125);
+	lymin->SetLineColor(kRed);
+	lymin->Draw();
 
+	TLine * lymax = new TLine(Ymax,0,Ymax,125);
+	lymax->SetLineColor(kRed);
+	lymax->Draw();
 
     }
     return;
@@ -448,280 +477,275 @@ void AnaWrapper::Draw_Everything()
 
 void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
 {
-    TApplication* theApp = new TApplication("App", 0, 0);
-    Init();
-    //------ Define input tree data for all detectors ----------
-    UInt_t TRIGGER;
-    UInt_t FOOT[NDETS];//multiplicity of foot detectors 
-    UInt_t FOOTE[NDETS][640];
-    UInt_t FOOTI[NDETS][640];
-    UInt_t TPATv[1];
-    ch->SetBranchAddress("TRIGGER",&TRIGGER);
-    //ch->SetBranchAddress("TPATv",TPATv);
-    for(int i=0; i<NDETS; i++){
-        TString bname   = Form("FOOT%d",  foot_id[i]);
-        TString bname_E = Form("FOOT%dE", foot_id[i]);
-        TString bname_I = Form("FOOT%dI", foot_id[i]);
-        ch->SetBranchAddress(bname.Data(),&FOOT[i]);
-        ch->SetBranchAddress(bname_E.Data(),FOOTE[i]);
-        ch->SetBranchAddress(bname_I.Data(),FOOTI[i]);
-    }
-    //----- Collect pedestals data ------
-    int Nevents = ch->GetEntries();
-    if(max_events>0) Nevents = max_events; 
-    int stat=0;
+  TApplication* theApp = new TApplication("App", 0, 0);
+  Init();
+
+  //Counters for the efficiency estimation
+  int N15 = 0;
+  int N16 = 0;
+  int N15_if_16 = 0;
+  int N16_if_15 = 0;
+
+   //------ Define input tree data for all detectors ----------
+  UInt_t TRIGGER;
+  UInt_t FOOT[NDETS];//multiplicity of foot detectors 
+  UInt_t FOOTE[NDETS][640];
+  UInt_t FOOTI[NDETS][640];
+  UInt_t TPATv[1];
+  ch->SetBranchAddress("TRIGGER",&TRIGGER);
+  //ch->SetBranchAddress("TPATv",TPATv);
+  for(int i=0; i<NDETS; i++){
+    TString bname   = Form("FOOT%d",  foot_id[i]);
+    TString bname_E = Form("FOOT%dE", foot_id[i]);
+    TString bname_I = Form("FOOT%dI", foot_id[i]);
+    ch->SetBranchAddress(bname.Data(),&FOOT[i]);
+    ch->SetBranchAddress(bname_E.Data(),FOOTE[i]);
+    ch->SetBranchAddress(bname_I.Data(),FOOTI[i]);
+  }
+  //----- Collect pedestals data ------
+  int Nevents = ch->GetEntries();
+  if(max_events>0) Nevents = max_events; 
+  int stat=0;
+  int det_mul=0;
+  cout << "\n-- Analysing raw pedestals " << endl;
+  cout << "\n-- Max Stat: " << MAX_STAT_PEDS << "\n\n";
+  for(int ev=0; ev<Nevents; ev++){
+    cout << "\r-- Event # : " << ev << flush;
+    ch->GetEntry(ev);
     int det_mul=0;
-    cout << "\n-- Analysing raw pedestals " << endl;
-    cout << "\n-- Max Stat: " << MAX_STAT_PEDS << "\n\n";
-    for(int ev=0; ev<Nevents; ev++){
-        cout << "\r-- Event # : " << ev << flush;
-        ch->GetEntry(ev);
-        int det_mul=0;
-        for(int i=0; i<NDETS; i++){
-            if(FOOT[i]>600) det_mul++;
-        }
-        //cout << "Seen coincident detectors: " << det_mul << "\n";
-        if(det_mul!=NDETS) continue;//Use correct time stitching!!!
-        for(int f=0; f<NDETS; f++){
-            for(int  j=0 ; j<640 ; j++){
-                h2_peds_raw[f]->Fill(FOOTI[f][j],FOOTE[f][j]); 
-            }
-        }
-        stat++;
-        if(stat==MAX_STAT_PEDS) break;
+    for(int i=0; i<NDETS; i++){
+      if(FOOT[i]>600) det_mul++;
     }
-    Make_Pedestals(50);
+    //cout << "Seen coincident detectors: " << det_mul << "\n";
+    if(det_mul!=NDETS) continue;//Use correct time stitching!!!
+    for(int f=0; f<NDETS; f++){
+      for(int  j=0 ; j<640 ; j++){
+	h2_peds_raw[f]->Fill(FOOTI[f][j],FOOTE[f][j]); 
+      }
+    }
+    stat++;
+    if(stat==MAX_STAT_PEDS) break;
+  }
+  Make_Pedestals(10);
 
-    //-------- Make baseline histo to get fine sigmas -------
-    double  asic_offset[10];
-    double  signal = 0;
-    int     counter_asic =0;
-    int     stat_baseline =0;
-    cout << "\n-- Analysing fine baseline " << endl;
-    for(int ev=0; ev<Nevents; ev++)
+  //-------- Make baseline histo to get fine sigmas -------
+  double  asic_offset[10];
+  double  signal = 0;
+  int     counter_asic =0;
+  int     stat_baseline =0;
+  cout << "\n-- Analysing fine baseline " << endl;
+  for(int ev=0; ev<Nevents; ev++)
+  {
+    ch->GetEntry(ev);
+    for(int f=0; f<NDETS; f++){//loop FOOTs
+      cout << "\r-- Event # : " << ev << flush;
+      //------------ Calculating correction for individual asics ---------
+      stat=0; counter_asic=0;
+      for(int i=0; i<10; i++){  asic_offset[i]=0.; }//reset asic baselines
+      for(int i=0; i<640; i++){
+	signal = FOOTE[f][i] - pedestal[f][i];
+	if(fabs(signal) < (6 * sigma[f][i]) &&
+	    is_good_strip(foot_id[f],FOOTI[f][i]) && //no bad strips
+	    ((FOOTI[f][i])%64)<63 && ((FOOTI[f][i])%64)>1)
+	{
+	  stat++;
+	  asic_offset[counter_asic] += signal;
+	}
+	if((FOOTI[f][i]%64)==0){//switch to next asic
+	  asic_offset[counter_asic] /= stat;
+	  counter_asic++;  stat=0;
+	}
+      }
+      //-------- Applying fine correction and fill baseline histograms ----------
+      counter_asic=0;
+      stat=0;
+      for(int i=0; i<640; i++)
+      {
+	if((FOOTI[f][i]%64) == 1 && FOOTI[f][i]>1) counter_asic++; 
+	signal = FOOTE[f][i] - pedestal[f][i] - asic_offset[counter_asic];
+	//if(fabs(signal) < (6 * sigma[f][i])){
+	h2_baseline[f]->Fill(FOOTI[f][i],signal);
+	//}
+      }
+    }//end detector loop
+    stat_baseline++; if(stat_baseline==MAX_STAT_PEDS) break;
+  }//end eventloop
+  Make_FineSigmas(10);
+
+  //--------- Final analysis 
+  TFile* outfile = new TFile("output.root","Recreate","Write");
+  TTree *tree = new TTree("tree","Tree with vectors of clusters");
+  std::vector<int> id_foot;
+  std::vector<int> size_foot;
+  std::vector<double> e_foot;
+  std::vector<double> cog_foot;
+  std::vector<double> mul_foot;
+
+  tree->Branch("id_foot",&id_foot);
+  tree->Branch("e_foot",&e_foot);
+  tree->Branch("cog_foot",&cog_foot);
+  tree->Branch("size_foot",&size_foot);
+  tree->Branch("mul_foot",&mul_foot);
+
+  foot_data fdata[NDETS];
+  cout << "\n\n-- Final analysis \n\n";
+  for(int ev=0; ev<Nevents; ev++)
+  {
+    cout << "\n\n-- Event # : " << ev << flush;
+    ch->GetEntry(ev);
+
+    id_foot.clear();
+    size_foot.clear();
+    e_foot.clear();
+    cog_foot.clear();
+    mul_foot.clear();
+
+    for(int f=0; f<NDETS; f++)//loop over all foots
     {
-        ch->GetEntry(ev);
-        for(int f=0; f<NDETS; f++){//loop FOOTs
-            cout << "\r-- Event # : " << ev << flush;
-            //------------ Calculating correction for individual asics ---------
-            stat=0; counter_asic=0;
-            for(int i=0; i<10; i++){  asic_offset[i]=0.; }//reset asic baselines
-            for(int i=0; i<640; i++){
-                signal = FOOTE[f][i] - pedestal[f][i];
-                if(fabs(signal) < (6 * sigma[f][i]) &&
-                        is_good_strip(foot_id[f],FOOTI[f][i]) && //no bad strips
-                        ((FOOTI[f][i])%64)<63 && ((FOOTI[f][i])%64)>1)
-                {
-                    stat++;
-                    asic_offset[counter_asic] += signal;
-                }
-                if((FOOTI[f][i]%64)==0){//switch to next asic
-                    asic_offset[counter_asic] /= stat;
-                    counter_asic++;  stat=0;
-                }
-            }
-            //-------- Applying fine correction and fill baseline histograms ----------
-            counter_asic=0;
-            stat=0;
-            for(int i=0; i<640; i++)
-            {
-                if((FOOTI[f][i]%64) == 1 && FOOTI[f][i]>1) counter_asic++; 
-                signal = FOOTE[f][i] - pedestal[f][i] - asic_offset[counter_asic];
-                //if(fabs(signal) < (6 * sigma[f][i])){
-                h2_baseline[f]->Fill(FOOTI[f][i],signal);
-                //}
-            }
-        }//end detector loop
-        stat_baseline++; if(stat_baseline==MAX_STAT_PEDS) break;
-    }//end eventloop
-    Make_FineSigmas(50);
+      fdata[f].clear(); 
+      stat=0; counter_asic=0;
+      for(int i=0; i<10; i++){  asic_offset[i]=0.; }//reset asic baselines
+      for(int i=0; i<640; i++){
+	signal = FOOTE[f][i] - pedestal[f][i];
+	if(fabs(signal) < (6 * sigma[f][i]) &&
+	    is_good_strip(foot_id[f],FOOTI[f][i]) && //no bad strips
+	    ((FOOTI[f][i])%64)<63 && ((FOOTI[f][i])%64)>1)
+	{
+	  stat++;
+	  asic_offset[counter_asic] += signal;
+	}
+	if((FOOTI[f][i]%64)==0){//switch to next asic
+	  asic_offset[counter_asic] /= stat;
+	  counter_asic++;  stat=0;
+	}
+      }
+      //--- Fill cluster data using accurate sigmas 
+      counter_asic=0;
+      for(int i=0; i<640; i++)
+      {
+	if((FOOTI[f][i]%64) == 1 && FOOTI[f][i]>1) counter_asic++;
+	signal = FOOTE[f][i] - pedestal[f][i] - asic_offset[counter_asic];
+	h2_cal_fine[f]->Fill(FOOTI[f][i], signal);
+	if(signal>(NSIGMA * sigma_fine[f][i]) && 
+	    is_good_strip(foot_id[f],FOOTI[f][i]))
+	{
+	  //cout << "\nStrip: " << FOOTI[f][i] << " for FOOT: " << foot_id[f] << " has passed the threshold condition, this has Energy: " << signal ;
+	  Check_Strip(FOOTI[f][i], signal, fdata[f]);
+	}
+      }
+    }//end loop detectors
+    //Filling output tree
 
-    //--------- Final analysis 
-    TFile* outfile = new TFile("output.root","Recreate","Write");
-    TTree *tree = new TTree("tree","Tree with vectors of clusters");
-    std::vector<int> id_foot;
-    std::vector<int> size_foot;
-    std::vector<double> e_foot;
-    std::vector<double> cog_foot;
-    std::vector<double> mul_foot;
+    //Loop cycling through the cluster loop
+    //for(int f=0; f<NDETS; f++)
+    //{
+      //cout << "\nHere FOOT " << foot_id[f] << " has " << fdata[f].size() << " clusters";
+      //for(auto c: fdata[f])
+      //{
+      //  cout << "\n-- Cluster: Size = " << c.size() << ", COG =  " << get_cog(c) << ", Esum = " << get_esum(c);
+      //}
+    //}
+    //Loop for filling in the multiplicty graph
+    int mul=0;
+    for(int f=0; f<NDETS; f++)
+    { 
+      if(FOOT[f]<640) continue;
+      if(fdata[f].size()>0) mul++;
+    }
+    h1_det_mul->Fill(mul);
 
-    tree->Branch("id_foot",&id_foot);
-    tree->Branch("e_foot",&e_foot);
-    tree->Branch("cog_foot",&cog_foot);
-    tree->Branch("size_foot",&size_foot);
-    tree->Branch("mul_foot",&mul_foot);
-
-    foot_data fdata[NDETS];
-    cout << "\n\n-- Final analysis \n\n";
-    for(int ev=0; ev<Nevents; ev++)
+    //Plot beam profile
+    double X, Y, xp;
+    for(auto & c0: fdata[0])
     {
-        cout << "\n\n-- Event # : " << ev << flush;
-        ch->GetEntry(ev);
-
-        id_foot.clear();
-        size_foot.clear();
-        e_foot.clear();
-        cog_foot.clear();
-        mul_foot.clear();
-
-        for(int f=0; f<NDETS; f++)//loop over all foots
-        {
-            fdata[f].clear(); 
-            stat=0; counter_asic=0;
-            for(int i=0; i<10; i++){  asic_offset[i]=0.; }//reset asic baselines
-            for(int i=0; i<640; i++){
-                signal = FOOTE[f][i] - pedestal[f][i];
-                if(fabs(signal) < (6 * sigma[f][i]) &&
-                        is_good_strip(foot_id[f],FOOTI[f][i]) && //no bad strips
-                        ((FOOTI[f][i])%64)<63 && ((FOOTI[f][i])%64)>1)
-                {
-                    stat++;
-                    asic_offset[counter_asic] += signal;
-                }
-                if((FOOTI[f][i]%64)==0){//switch to next asic
-                    asic_offset[counter_asic] /= stat;
-                    counter_asic++;  stat=0;
-                }
-            }
-            //--- Fill cluster data using accurate sigmas 
-            counter_asic=0;
-            for(int i=0; i<640; i++)
-            {
-                if((FOOTI[f][i]%64) == 1 && FOOTI[f][i]>1) counter_asic++;
-                signal = FOOTE[f][i] - pedestal[f][i] - asic_offset[counter_asic];
-		h2_cal_fine[f]->Fill(FOOTI[f][i], signal);
-                if(signal>(NSIGMA * sigma_fine[f][i]) && 
-                        is_good_strip(foot_id[f],FOOTI[f][i]))
-                {
-		    cout << "\nStrip: " << FOOTI[f][i] << " for FOOT: " << foot_id[f] << " has passed the threshold condition, this has Energy: " << signal ;
-                    Check_Strip(FOOTI[f][i], signal, fdata[f]);
-                }
-            }
-        }//end loop detectors
-        //Filling output tree
-
-       //Loop cycling through the cluster loop
-       for(int f=0; f<NDETS; f++)
-       {
-           cout << "\nHere FOOT " << foot_id[f] << " has " << fdata[f].size() << " clusters";
-           for(auto c: fdata[f])
-             {
-	       cout << "\n-- Cluster: Size = " << c.size() << ", COG =  " << get_cog(c) << ", Esum = " << get_esum(c);
-	     }
-       }
-     //Loop for filling in the multiplicty graph
-       int mul=0;
-       for(int f=0; f<NDETS; f++)
-       { 
-       if(FOOT[f]<640) continue;
-       if(fdata[f].size()>0) mul++;
-       }
-       h1_det_mul->Fill(mul);
-
-     //Plot beam profile
-     double X, Y, xp;
-     for(auto & c0: fdata[0])
-       {
-	   for(auto & c1: fdata[1])
-           {
-	       xp = get_cog(c1);
-	       X = (-1)*(xp*FOOT_LENGTH/640.- FOOT_LENGTH/2.);
-	       Y = (get_cog(c0)*FOOT_LENGTH/640.- FOOT_LENGTH/2.);
-	       h2_beam_XY->Fill(X,Y);
-               //h2_beam_XY->Fill(get_cog(c1),get_cog(c0));
-	       h1_beam_X->Fill(X);
-               h1_beam_Y->Fill(Y);
-	   }
-       }
-
-     //Counters for the efficiency estimation
-     int N15 = 0;
-     int N16 = 0;
-     int N15_if_16 = 0;
-     int N16_if_15 = 0;
-		     
-     //Defines variables to test efficiency
-     double Ymin= -12;
-     double Ymax= 4;
-     double Xmin= -8;
-     double Xmax= 6;
-     double e_threshold = 10;
+      for(auto & c1: fdata[1])
+      {
+	xp = get_cog(c1);
+	X = xp*FOOT_LENGTH/640.- FOOT_LENGTH/2.;
+	Y = get_cog(c0)*FOOT_LENGTH/640.- FOOT_LENGTH/2.;
+	h2_beam_XY->Fill(X,Y);
+	//h2_beam_XY->Fill(get_cog(c1),get_cog(c0));
+	h1_beam_X->Fill(X);
+	h1_beam_Y->Fill(Y);
+      }
+    }
 
 
-     //Estimate efficiency of every detector
-     if(eff_loop1(Ymax,Ymin,e_threshold,fdata[0]))
-     {
+    //Estimate efficiency of every detector
+    if(eff_loop1(Ymax,Ymin,e_threshold,fdata[0]) && fdata[0].size()==1)
+    {
       N15++;
       if(eff_loop2(Xmax,Xmin,fdata[1]))
       {
 	N16_if_15++;
       }
-     }
+    }
 
-     if(eff_loop1(Xmax,Xmin,e_threshold,fdata[1]))
-     {
+    if(eff_loop1(Xmax,Xmin,e_threshold,fdata[1]) && fdata[1].size()==1)
+    {
       N16++;
       if(eff_loop2(Ymax,Ymin,fdata[0]))
       {
 	N15_if_16++;
       }	
-     } 
-       
-       
-     
-     //Filling output tree
-       for(int f=0; f<NDETS; f++)
-        {
-            for(auto & clust: fdata[f])
-            {
-                id_foot.push_back(foot_id[f]);
-                e_foot.push_back(get_esum(clust));
-                cog_foot.push_back(get_cog(clust));
-                size_foot.push_back(clust.size());
-                mul++;
-		
-       	        h1_cluster_e[f]->Fill(get_esum(clust));
-	        h1_cluster_size[f]->Fill(clust.size());
-	        h2_cluster_e_vs_cog[f]->Fill(get_cog(clust), get_esum(clust));
-       
-	    }
-	    mul_foot.push_back(mul);
-        }
-        tree->Fill();
-    }//end of eventloop
-  
-    double Eff_15;
-    double Eff_16;
+    } 
 
-    Eff_16 = (double)N16_if_15/(double)N15 * 100;
-    Eff_15 = (double)N15_if_16/(double)N16 * 100;
 
-    cout << "\n\n Efficiency of F16: " << Eff_16 << "%\n\n";
-    cout << "\n\n Efficiency of F15: " << Eff_15 << "%\n\n";
-   
-    cout << "\n\n--- The program has ended! ---";
-    tree->AutoSave();
-    Draw_Everything();
 
-    outfile->Close();
-    theApp->Run();
-    return;
+    //Filling output tree
+    for(int f=0; f<NDETS; f++)
+    {
+      for(auto & clust: fdata[f])
+      {
+	id_foot.push_back(foot_id[f]);
+	e_foot.push_back(get_esum(clust));
+	cog_foot.push_back(get_cog(clust));
+	size_foot.push_back(clust.size());
+	mul++;
+
+	h1_cluster_e[f]->Fill(get_esum(clust));
+	h1_cluster_size[f]->Fill(clust.size());
+	h2_cluster_e_vs_cog[f]->Fill(get_cog(clust), get_esum(clust));
+
+      }
+      mul_foot.push_back(mul);
+    }
+    tree->Fill();
+  }//end of eventloop
+
+  double Eff_15;
+  double Eff_16;
+
+  Eff_16 = (double) N16_if_15 / (double) N15 * 100;
+  Eff_15 = (double) N15_if_16 / (double) N16 * 100;
+
+  cout << "\n\n N15= " << N15 << ", N16= " << N16 << "\n\n";
+  cout << "\n\n Efficiency of F16: " << Eff_16 << "%\n\n";
+  cout << "\n\n Efficiency of F15: " << Eff_15 << "%\n\n";
+
+  cout << "\n\n--- The program has ended! ---";
+  tree->AutoSave();
+  Draw_Everything();
+
+  outfile->Close();
+  theApp->Run();
+  return;
 }
 
 int main(Int_t argc, Char_t* argv[])
 {
-    gRandom = new TRandom3();
-    gRandom->SetSeed(0);
-    gROOT->Macro("rootlogon.C");
-    gStyle->SetPalette(kRainBow);
+  gRandom = new TRandom3();
+  gRandom->SetSeed(0);
+  gROOT->Macro("rootlogon.C");
+  gStyle->SetPalette(kRainBow);
 
-    AnaWrapper ana;
+  AnaWrapper ana;
 
-    TChain * ch = new TChain("h101");
-    //ch->Add("../roots_foots/main0131_0041.root");
-    ch->Add("/u/lndgst02/william/roots/run93_1_unpacked.root");
-    //ch->Add("/Users/vpanin/Desktop/GSI/Experiments/S522/analysis/Tracking/data_unpacked/");
-    //ana.analyse(0,-1,ch);
-    ana.analyse(0,10000,ch);
-    return 0;
+  TChain * ch = new TChain("h101");
+  //ch->Add("../roots_foots/main0131_0041.root");
+  ch->Add("/u/lndgst02/william/roots/run93_1_unpacked.root");
+  //ch->Add("/Users/vpanin/Desktop/GSI/Experiments/S522/analysis/Tracking/data_unpacked/");
+  //ana.analyse(0,-1,ch);
+  ana.analyse(0,10000,ch);
+  return 0;
 }
