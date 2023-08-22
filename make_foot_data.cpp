@@ -12,11 +12,15 @@ const double    FOOT_LENGTH   = 96.;//mm
 const double    NSIGMA        = 4;
 const int MAX_STAT_PEDS = 5e4;
 
-//Defines variables to define efficiency test areas
-double Ymin= 25;
-double Ymax= 50;
-double Xmin= 25;
-double Xmax= 50;
+//Defines variables to define efficiency test areas, the central points are found by eye
+double X_cent=-2.02;
+double Y_cent=-1.01;
+double X_width = 13;
+double Y_width = 13;
+double Ymin= Y_cent-Y_width/2;
+double Ymax= Y_cent+Y_width/2;
+double Xmin= X_cent-X_width/2;
+double Xmax= X_cent+X_width/2;
 double e_threshold = 0;
 
 
@@ -168,7 +172,7 @@ bool AnaWrapper::is_good_strip(UInt_t det, UInt_t strip)
 
 	) return false;
   }
-  if((strip%64)>63 || (strip%64)<2) return false;//edge strips for every asic
+  //if((strip%64)>63 || (strip%64)<2) return false;//edge strips for every asic
   return true;
 
 }
@@ -330,7 +334,7 @@ void AnaWrapper::Draw_Everything()
     {
         canvas_raw_peds->cd(i+1);
 	h2_peds_raw[i]->GetXaxis()->SetTitle("Strip Number");
-	h2_peds_raw[i]->GetYaxis()->SetTitle("Uncalibrated Signal");
+	h2_peds_raw[i]->GetYaxis()->SetTitle("Pedestals");
 	h2_peds_raw[i]->GetZaxis()->SetTitle("Signal Intensity");
 	h2_peds_raw[i]->Draw("colz");
         //h2_peds_raw_clean[i]->Draw("colz");
@@ -343,6 +347,7 @@ void AnaWrapper::Draw_Everything()
         for (int c=0; c<10; c++)
         {
 	   TLine * l = new TLine(c*64,0,c*64,1000);
+	   l->SetLineStyle(10);
 	   l->Draw();
         } 
 
@@ -350,7 +355,7 @@ void AnaWrapper::Draw_Everything()
         h2_baseline[i]->GetXaxis()->SetTitle("Strip Number");
 	gPad->SetLogz();
 	h2_baseline[i]->GetYaxis()->SetTitle("Baseline Corrected Signal");
-	h2_baseline[i]->GetZaxis()->SetTitle("Signal Intensity");
+	h2_baseline[i]->GetZaxis()->SetTitle("Number of Hits");
         h2_baseline[i]->Draw("colz");
         h1_baseline[i]->SetMarkerStyle(kFullCircle);
     	h1_baseline[i]->SetMarkerSize(0.2);
@@ -361,7 +366,8 @@ void AnaWrapper::Draw_Everything()
         for(int c=0; c<10; c++)
         {
            TLine * l = new TLine(c*64,-50,c*64,50);
-           l->Draw();
+           l->SetLineStyle(10);
+	   l->Draw();
         }
 
 
@@ -372,7 +378,7 @@ void AnaWrapper::Draw_Everything()
         h1_sigma_raw[i]->SetLineColor(kBlue);
         h1_sigma_raw[i]->GetYaxis()->SetRangeUser(-2,10);
         h1_sigma_raw[i]->GetXaxis()->SetTitle("Strip Number");
-        h1_sigma_raw[i]->GetYaxis()->SetTitle("ADC Sigma");
+        h1_sigma_raw[i]->GetYaxis()->SetTitle("Sigma Values");
         //h1_sigma_raw[i]->SetTitle("Sigmas before baseline correction");
         h1_sigma_raw[i]->Draw();
 
@@ -385,7 +391,8 @@ void AnaWrapper::Draw_Everything()
         for(int c=0; c<10; c++)
         {
 	   TLine * l = new TLine(c*64,-2,c*64,10);
-           l->Draw();
+           l->SetLineStyle(10);
+	   l->Draw();
         }
 
 	canvas_cluster_energy->cd(i+1);
@@ -403,24 +410,26 @@ void AnaWrapper::Draw_Everything()
 	canvas_cluster_e_vs_cog->cd(i+1);
 	h2_cluster_e_vs_cog[i]->GetXaxis()->SetTitle("Strip Number");
 	h2_cluster_e_vs_cog[i]->GetYaxis()->SetTitle("Cluster Energy Sum");
-	h2_cluster_e_vs_cog[i]->GetZaxis()->SetTitle("Cluster Centre of Gravity");
+	h2_cluster_e_vs_cog[i]->GetZaxis()->SetTitle("Number of Hits");
 	h2_cluster_e_vs_cog[i]->Draw("colz");
 
         for(int c=0; c<10; c++)
         {
 	   TLine * l = new TLine(c*64,-10,c*64,100);
-      	l->Draw();
+        l->SetLineStyle(10);	
+	   l->Draw();
         }
 
 	canvas_fine->cd(i+1);
 	h2_cal_fine[i]->GetXaxis()->SetTitle("Strip Number");
-	h2_cal_fine[i]->GetYaxis()->SetTitle("Calibrated Fine Sigma");
-	h2_cal_fine[i]->GetZaxis()->SetTitle("Signal Intensity");
+	h2_cal_fine[i]->GetYaxis()->SetTitle("Baseline Corrected Signal");
+	h2_cal_fine[i]->GetZaxis()->SetTitle("Number of Hits");
 	h2_cal_fine[i]->Draw("colz");
   
         for(int c=0; c<10; c++)
         {
 	   TLine * l = new TLine(c*64,-500,c*64,500);
+	   l->SetLineStyle(10);
 	   l->Draw();
         }
 
@@ -435,39 +444,40 @@ void AnaWrapper::Draw_Everything()
 	gPad->SetLogz();
 	h2_beam_XY->GetXaxis()->SetTitle("X-position (mm)");
 	h2_beam_XY->GetYaxis()->SetTitle("Y-position (mm)");
-        h2_beam_XY->GetZaxis()->SetTitle("Signal Intensity");
+        h2_beam_XY->GetZaxis()->SetTitle("Number of Hits");
 	h2_beam_XY->Draw("colz");
 
         TBox * box = new TBox(Xmin,Ymin,Xmax,Ymax);
         box->SetFillStyle(0);
 	box->SetLineColor(kBlack);
+	box->SetLineStyle(10);
 	box->SetLineWidth(2);
 	box->Draw();
 
 	
 	canvas_XY->cd(2);
-	h1_beam_X->GetXaxis()->SetTitle("Strip Number");
+	h1_beam_X->GetXaxis()->SetTitle("X-position (mm)");
 	h1_beam_X->GetYaxis()->SetTitle("Number of Hits");
 	h1_beam_X->Draw();
 
-        TLine * lxmin = new TLine(Xmin,0,Xmin,125);
-        lxmin->SetLineColor(kRed);
+        TLine * lxmin = new TLine(Xmin,0,Xmin,-100);
+	lxmin->SetLineColor(kRed);
 	lxmin->Draw();
 
-	TLine * lxmax = new TLine(Xmax,0,Xmax,125);
+	TLine * lxmax = new TLine(Xmax,0,Xmax,-100);
 	lxmax->SetLineColor(kRed);
 	lxmax->Draw();
 
 	canvas_XY->cd(3);
-	h1_beam_Y->GetXaxis()->SetTitle("Strip Number");
+	h1_beam_Y->GetXaxis()->SetTitle("Y-position (mm)");
 	h1_beam_Y->GetYaxis()->SetTitle("Number of Hits");
 	h1_beam_Y->Draw();
 
-	TLine * lymin = new TLine(Ymin,0,Ymin,125);
+	TLine * lymin = new TLine(Ymin,0,Ymin,-100);
 	lymin->SetLineColor(kRed);
 	lymin->Draw();
 
-	TLine * lymax = new TLine(Ymax,0,Ymax,125);
+	TLine * lymax = new TLine(Ymax,0,Ymax,-100);
 	lymax->SetLineColor(kRed);
 	lymax->Draw();
 
@@ -573,7 +583,7 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
   Make_FineSigmas(10);
 
   //--------- Final analysis 
-  TFile* outfile = new TFile("output.root","Recreate","Write");
+  TFile* outfile = new TFile("output_run67_500k.root","Recreate","Write");
   TTree *tree = new TTree("tree","Tree with vectors of clusters");
   std::vector<int> id_foot;
   std::vector<int> size_foot;
@@ -672,7 +682,8 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
 
 
     //Estimate efficiency of every detector
-    if(eff_loop1(Ymax,Ymin,e_threshold,fdata[0]) && fdata[0].size()==1)
+    //if(eff_loop1(Ymax,Ymin,e_threshold,fdata[0]) && fdata[0].size()==1)
+    if(eff_loop1(Ymax,Ymin,e_threshold,fdata[0]))
     {
       N15++;
       if(eff_loop2(Xmax,Xmin,fdata[1]))
@@ -681,7 +692,8 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
       }
     }
 
-    if(eff_loop1(Xmax,Xmin,e_threshold,fdata[1]) && fdata[1].size()==1)
+    //if(eff_loop1(Xmax,Xmin,e_threshold,fdata[1]) && fdata[1].size()==1)
+    if(eff_loop1(Xmax,Xmin,e_threshold,fdata[1]))
     {
       N16++;
       if(eff_loop2(Ymax,Ymin,fdata[0]))
@@ -727,6 +739,10 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
   tree->AutoSave();
   Draw_Everything();
 
+  h2_beam_XY->Write();
+  h1_beam_X->Write();
+  h1_beam_Y->Write();
+  
   outfile->Close();
   theApp->Run();
   return;
@@ -743,9 +759,9 @@ int main(Int_t argc, Char_t* argv[])
 
   TChain * ch = new TChain("h101");
   //ch->Add("../roots_foots/main0131_0041.root");
-  ch->Add("/u/lndgst02/william/roots/run93_1_unpacked.root");
+  ch->Add("/u/lndgst02/william/roots/run67_1_unpacked.root");
   //ch->Add("/Users/vpanin/Desktop/GSI/Experiments/S522/analysis/Tracking/data_unpacked/");
   //ana.analyse(0,-1,ch);
-  ana.analyse(0,10000,ch);
+  ana.analyse(0,500000,ch);
   return 0;
 }
