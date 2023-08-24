@@ -21,7 +21,7 @@ double Ymin= Y_cent-Y_width/2;
 double Ymax= Y_cent+Y_width/2;
 double Xmin= X_cent-X_width/2;
 double Xmax= X_cent+X_width/2;
-double e_threshold = 0;
+double e_threshold = 15;
 
 
 //Clustering data structures
@@ -583,7 +583,7 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
   Make_FineSigmas(10);
 
   //--------- Final analysis 
-  TFile* outfile = new TFile("output_run67_500k.root","Recreate","Write");
+  TFile* outfile = new TFile("output_run68_500k.root","Recreate","Write");
   TTree *tree = new TTree("tree","Tree with vectors of clusters");
   std::vector<int> id_foot;
   std::vector<int> size_foot;
@@ -603,6 +603,8 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
   {
     cout << "\n\n-- Event # : " << ev << flush;
     ch->GetEntry(ev);
+    if(FOOT[0]==0 || FOOT[1]==0) continue;
+
 
     id_foot.clear();
     size_foot.clear();
@@ -625,7 +627,8 @@ void AnaWrapper::analyse(int firstEvent, int max_events, TChain * ch)
 	  asic_offset[counter_asic] += signal;
 	}
 	if((FOOTI[f][i]%64)==0){//switch to next asic
-	  asic_offset[counter_asic] /= stat;
+
+  asic_offset[counter_asic] /= stat;
 	  counter_asic++;  stat=0;
 	}
       }
@@ -759,7 +762,7 @@ int main(Int_t argc, Char_t* argv[])
 
   TChain * ch = new TChain("h101");
   //ch->Add("../roots_foots/main0131_0041.root");
-  ch->Add("/u/lndgst02/william/roots/run67_1_unpacked.root");
+  ch->Add("/u/lndgst02/william/roots/run68_1_unpacked.root");
   //ch->Add("/Users/vpanin/Desktop/GSI/Experiments/S522/analysis/Tracking/data_unpacked/");
   //ana.analyse(0,-1,ch);
   ana.analyse(0,500000,ch);
