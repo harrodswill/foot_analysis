@@ -26,9 +26,9 @@ void rootlogon()
 	gStyle->SetStatBorderSize(1);
 	//gStyle->SetStatFont(42);
 	gStyle->SetStatFont(132);
-	//gStyle->SetOptStat(0);
+	gStyle->SetOptStat(0);
 	//gStyle->SetOptStat(1110000);
-	gStyle->SetOptStat(1111111);
+	//gStyle->SetOptStat(1111111);
 	gStyle->SetHistFillColor(kWhite);
 	//gStyle->SetOptTitle(0);
 	//gStyle->SetTextFont(42);//Helvetica
